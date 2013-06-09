@@ -12,7 +12,7 @@ namespace NetworkSimulationApp
          public NetGraph() { } 
     
         public NetGraph(bool allowParallelEdges)
-            : base(allowParallelEdges) { }
+            : base(allowParallelEdges) { } 
 
         public NetGraph(bool allowParallelEdges, int vertexCapacity)
             : base(allowParallelEdges, vertexCapacity) { }
