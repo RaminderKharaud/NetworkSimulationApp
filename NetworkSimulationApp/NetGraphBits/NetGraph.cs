@@ -9,7 +9,7 @@ namespace NetworkSimulationApp
      [Serializable()] 
     class NetGraph : BidirectionalGraph<NetVertex, NetEdge>
     {
-         public NetGraph() { }
+         public NetGraph() { } 
     
         public NetGraph(bool allowParallelEdges)
             : base(allowParallelEdges) { }

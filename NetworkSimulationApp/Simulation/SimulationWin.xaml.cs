@@ -25,7 +25,7 @@ namespace NetworkSimulationApp
         
         public SimulationWin()
         {
-            taskList = new List<Task>();
+            taskList = new List<Task>(); 
             InitializeComponent();
         }
 
