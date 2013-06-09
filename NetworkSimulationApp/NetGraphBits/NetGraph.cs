@@ -6,7 +6,7 @@ using System.Text;
 using QuickGraph;
 namespace NetworkSimulationApp
 {
-     [Serializable()]
+     [Serializable()] 
     class NetGraph : BidirectionalGraph<NetVertex, NetEdge>
     {
          public NetGraph() { }
