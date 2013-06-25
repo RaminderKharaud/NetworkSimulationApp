@@ -1,15 +1,27 @@
-﻿ <Window x:Class="NetworkSimulationApp.MainWindow"
+﻿  <Window x:Class="NetworkSimulationApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:graphsharp="clr-namespace:GraphSharp.Controls;assembly=GraphSharp.Controls"
         xmlns:local="clr-namespace:NetworkSimulationApp"
         xmlns:zoom="clr-namespace:WPFExtensions.Controls;assembly=WPFExtensions"
-        Title="MainWindow" Height="700" Width="1025">
+        Title="MainWindow" Height="700" Width="1110">
     <Window.DataContext>
         <local:MainWindowViewModel />
     </Window.DataContext>
     <Window.Resources>
-
+        <DataTemplate DataType="{x:Type local:CommoditiesEntryViewModel}">
+            <Border BorderThickness="0 0 0 1" BorderBrush="White">
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <Label Name="lblOrigin" Content="Origin:" Foreground="White"></Label>
+                    <ComboBox Name="cbxOrigin" ItemsSource="{Binding CombList}" SelectedItem="{Binding OriginID}" FontSize="14"/>
+                <Label Name="lblDest" Content="Dest:" Foreground="White"></Label>
+                <ComboBox Name="cbxDest" ItemsSource="{Binding CombList}" SelectedItem="{Binding DestinationID}" FontSize="14"/>
+                <Label Name="lblDemand" Content="Demand:" Foreground="White"></Label>
+                <TextBox Name="txtDemand" Width="50" FontSize="15" Text="{Binding StringDemand}" ></TextBox>
+                    <Button Name="btnDelete" Content="Del" Command="{Binding Delete}" Style="{DynamicResource GlassButton}" Width="10" Foreground="White" FontSize="14" Margin="5 0 0 0"></Button>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
 
         <Style x:Key="ButtonBackground" TargetType="{x:Type Border}">
             <Setter Property="Background">
@@ -92,7 +104,7 @@
     <Grid Background="#333333">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width ="*"/>
-            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="345"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -109,20 +121,26 @@
             </Menu>
         </DockPanel>
         <StackPanel Grid.Column="1" Grid.Row="1" Background="#333333">
-            <Button Grid.Column="1" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="25" Content="Data Mode" Background="{Binding Path=DBColor}" Command="{Binding Path=DataMode}" Margin="10,21,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="130" Height="40"/>
-            <Button Grid.Column="1" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="30" Content="Start" Command="{Binding Path=Start}" Margin="10,21,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="130" Height="50"/>
+            <Button Grid.Column="1" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="30" Content="Start" Command="{Binding Path=Start}" Margin="10,21,0,0"  HorizontalAlignment="Center" Width="250" Height="50"/>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Height="300" Width="320">
+                <StackPanel Name="stpCommodities" HorizontalAlignment="Center" Margin="10">
+                    <Label Name="lblcomm" Content="Commotidies" Foreground="White" FontSize="20" Margin="0 5 5 5" HorizontalAlignment="Left"></Label>
+                    <ItemsControl ItemsSource="{Binding CommodityList}"/>
+                    <Button Name="btnAdd" HorizontalAlignment="Right" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="20" Command="{Binding Path=AddCommodity}" Content="+" Width="40" Height="40" Margin="5 5 5 5"></Button>
+                </StackPanel>
+            </ScrollViewer>
         </StackPanel>
         <Grid Grid.Row="1" Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/> 
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Background="#CCCCCC" Height="35" Orientation="Horizontal" >
-                <Button x:Name="btnCreateGraph" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateGraph}" CommandParameter="AddNewGraph"  Content=" Create New Graph "  Margin="10,3,0,0" Height="25" />
-                <Button x:Name="btnVertex" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateVertex}" CommandParameter="AddVertex"  Content=" New Vertex "  Margin="10,3,0,0" Height="25"/>
-                <Button x:Name="btnRemoveVertex" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=RemoveVertex}" CommandParameter="RemoveVertex" Content=" Remove Vertex " Margin="10,3,0,0"  Height="25"/>
-                <Button x:Name="btnEdge" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateEdge}" CommandParameter="AddEdge" Content=" New Edge " Margin="10,3,0,0"  Height="25"/>
-                <Button x:Name="btnRemoveEdge" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=RemoveEdge}" CommandParameter="RemoveEdge" Content=" Remove Edge " Margin="10,3,0,0"  Height="25"/>
+                <Button x:Name="btnCreateGraph" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateGraph}" CommandParameter="AddNewGraph"  Content=" Create New Graph " Width="150" />
+                <Button x:Name="btnVertex" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateVertex}" CommandParameter="AddVertex"  Content=" New Vertex " Width="150" />
+                <Button x:Name="btnRemoveVertex" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=RemoveVertex}" CommandParameter="RemoveVertex" Content=" Remove Vertex " Width="150" />
+                <Button x:Name="btnEdge" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateEdge}" CommandParameter="AddEdge" Content=" New Edge " Width="150"/>
+                <Button x:Name="btnRemoveEdge" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=RemoveEdge}" CommandParameter="RemoveEdge" Content=" Remove Edge " Width="150"/>
             </StackPanel>
               <zoom:ZoomControl  Grid.Row="1"  Zoom="0.2" ZoomBoxOpacity="0.5" Background="White" >
 

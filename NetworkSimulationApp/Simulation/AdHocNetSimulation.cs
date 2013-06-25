@@ -110,21 +110,28 @@ namespace NetworkSimulationApp
             int Targets = 0, Dest = 0;
             int[] TargetList;
             int j = 0;
-            for (int i = 0; i < VertexCount; i++)
+            
+            for (int origin = 0; origin < VertexCount; origin++)
             {
-                Targets = this.Nodes[i].Targets.Count;
-                TargetList = new int[Targets + 1];
+                Targets = this.Nodes[origin].Targets.Count;
+                TargetList = new int[Targets + 1]; //origin node also go into check List
+                int[][] commodities = new int[Targets][];
                 j = 0;
-                foreach (KeyValuePair<int, AdHocNode> pair in this.Nodes[i].Targets)
+                foreach (KeyValuePair<int, AdHocNode> pair in this.Nodes[origin].Targets)
                 {
                     TargetList[j] = ((AdHocNode)pair.Value).ID;
                     ++j;
                 }
-                TargetList[Targets] = i;
+                TargetList[Targets] = origin; //origin and dest can't be the same
                 Dest = this._getRendomDestination(VertexCount, TargetList);
                 if (Dest != -1)
                 {
-
+                    for (int target = 0; target < TargetList.Length; target++)
+                    {
+                        int [] path = _sortestPath(TargetList[target], Dest,commodities);
+                        commodities[target] = path;
+                    }
+                    
                 }
             }
         }
@@ -153,6 +160,12 @@ namespace NetworkSimulationApp
             }
             if(found) return dest;
             return -1;
+        }
+
+        private int[] _sortestPath(int origin,int dest,int [][] paths){
+            int[] PossiblePath = null;
+
+            return PossiblePath;
         }
         
         #endregion

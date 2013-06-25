@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.ComponentModel;
@@ -20,39 +21,30 @@ namespace NetworkSimulationApp
         private int _FistNodeID;
         private string _layoutAlgorithmType;
         private string _openedFileName;
-        private string _dbColor;
         private NetGraph _graph;
         private ICommand _createGraph;
-        private ICommand _createVertex;
+        private ICommand _createVertex; 
         private ICommand _createEdge;
         private ICommand _removeVertex;
         private ICommand _removeEdge;
         private ICommand _openGraph;
         private ICommand _saveGraph;
-        private ICommand _dataMode;
+        private ICommand _AddCommodity;
         private ICommand _start;
         private bool _AddEdgeMode;
         private bool _RemoveEdgeMode;
         private bool _RemoveVertexMode;
-        private bool _DataModeOn;
+        private int _Mode;
        // private List<NetVertex> _existingVertices;
         private AdHocNetSimulation _Simulation;
+        private ObservableCollection<CommoditiesEntryViewModel> _CommodityList;
+        private ObservableCollection<int> _VList;
         #endregion
 
         #region Constructors
         public MainWindowViewModel()
         {
-            _IDCount = 0;
-            _Counter = 0;
-            _FistNodeID = 0;
-          //  _existingVertices = new List<NetVertex>();
-            _Simulation = new AdHocNetSimulation();
-            _AddEdgeMode = false;
-            _RemoveEdgeMode = false;
-            _RemoveVertexMode = false;
-            _DataModeOn = false;
-            _openedFileName = "";
-            _dbColor = "";
+            this._Intialization();
         }
         #endregion
 
@@ -68,6 +60,7 @@ namespace NetworkSimulationApp
         {
             Graph = new NetGraph(true);
            // _existingVertices.Add(new NetVertex(1));
+            _VList.Add(1);
             Graph.AddVertex(new NetVertex(1));
             NotifyPropertyChanged("Graph");
             _IDCount = 1; 
@@ -98,6 +91,7 @@ namespace NetworkSimulationApp
             for (int i = 1; i <= VertexCount; i++)
             {
               //  _existingVertices.Add(new NetVertex(i));
+                _VList.Add(i);
                 Graph.AddVertex(new NetVertex(i));
             }
             
@@ -172,6 +166,7 @@ namespace NetworkSimulationApp
          //   _existingVertices.Add(new NetVertex(_IDCount + 1));
             try
             {
+                _VList.Add(_IDCount + 1);
                 Graph.AddVertex(new NetVertex(_IDCount + 1));
                 NotifyPropertyChanged("Graph");
             }
@@ -180,8 +175,6 @@ namespace NetworkSimulationApp
                 ExceptionMessage.Show("Exception when adding new vertex: " + ex.ToString());
             }
             if(_layoutAlgorithmType == null) LayoutAlgorithmType = "LinLog";
-            DBColor = "";
-            _DataModeOn = false;
             _IDCount++;
           
         }
@@ -192,11 +185,7 @@ namespace NetworkSimulationApp
         }
         private void _RemoveVertex(object parameter)
         {
-            _AddEdgeMode = false;
-            _RemoveEdgeMode = false;
-            _DataModeOn = false;
-            _RemoveVertexMode = true;
-            DBColor = "";
+            _Mode = 3;
         }
         #endregion
 
@@ -208,11 +197,7 @@ namespace NetworkSimulationApp
         }
         private void _AddEdge(object parameter)
         {
-            _AddEdgeMode = true;
-            _RemoveEdgeMode = false;
-            _RemoveVertexMode = false;
-            _DataModeOn = false;
-            DBColor = "";
+            _Mode = 1;
             _Counter = 0;
         }
         private bool _CanRemoveEdge(object parameter)
@@ -222,38 +207,23 @@ namespace NetworkSimulationApp
         }
         private void _RemoveEdge(object parameter)
         {
-            _AddEdgeMode = false;
-            _RemoveEdgeMode = true;
-            _RemoveVertexMode = false;
-            _DataModeOn = false;
-            DBColor = "";
+            _Mode = 2;
             _Counter = 0;
         }
         #endregion
 
-        #region DataMode Commands
-        private bool _canChangeDataMode(object parameter)
+        #region AddCommodity Commands
+        private bool _canAddCommodity(object parameter)
         {
-            if (Graph == null) return false;
+            if (Graph == null || Graph.VertexCount < 2) return false;
             return true;
         }
-        private void _ChangeDataMode(object parameter)
+        private void _AddNewCommodity(object parameter)
         {
-            if (_DataModeOn == true)
-            {
-                _DataModeOn = false;
-                DBColor = "";
-            }
-            else
-            {
-                _DataModeOn = true;
-                DBColor = "Yellow";
-            }
-            _AddEdgeMode = false;
-            _RemoveEdgeMode = false;
-            _RemoveVertexMode = false;
-            _Counter = 0;
-        
+            CommoditiesEntryViewModel CommView = new CommoditiesEntryViewModel();
+            CommView.CombList = _VList;
+            CommView.ParentList = CommodityList;
+            CommodityList.Add(CommView);
         }
         #endregion
 
@@ -275,10 +245,25 @@ namespace NetworkSimulationApp
         #endregion
 
         #region private methods
+        private void _Intialization()
+        {
+            _IDCount = 0;
+            _Counter = 0;
+            _FistNodeID = 0;
+            //  _existingVertices = new List<NetVertex>();
+            _Simulation = new AdHocNetSimulation();
+            _AddEdgeMode = false;
+            _RemoveEdgeMode = false;
+            _RemoveVertexMode = false;
+            _openedFileName = "";
+            _Mode = 0;
+            _CommodityList = new ObservableCollection<CommoditiesEntryViewModel>();
+            _VList = new ObservableCollection<int>();
+            _AddNewCommodity(null);
+        }
         private NetEdge _AddNewGraphEdge(NetVertex from, NetVertex to)
         {
             string edgeString = string.Format("{0}-{1} Connected", from.ID.ToString(), to.ID.ToString());
-
             NetEdge newEdge = new NetEdge(edgeString, from, to);
             Graph.AddEdge(newEdge);
             return newEdge;
@@ -294,7 +279,7 @@ namespace NetworkSimulationApp
             {
                 int from = 0, to = 0;
                 int count = Graph.VertexCount;
-                _AddEdgeMode = false;
+                _Mode = 0;
                 _Counter = 0;
                 for (int i = 0; i < count; i++)
                 {
@@ -324,8 +309,7 @@ namespace NetworkSimulationApp
             }
             else if (_Counter == 1)
             {
-                
-                _RemoveEdgeMode = false;
+                _Mode = 0;
                 _Counter = 0;
                 
                 if (NodeID != _FistNodeID)
@@ -350,14 +334,14 @@ namespace NetworkSimulationApp
                             ExceptionMessage.Show("Exception when removing edge: " + ex.ToString());
                         }
                     }
-                    _RemoveEdgeMode = false;
+                    _Mode = 0;
                     _Counter = 0;
                 }
             }
         }
         private void _RemoveVertex(int NodeID)
         {
-            _RemoveVertexMode = false;
+            _Mode = 0;
             int index = 0;
             int count = Graph.VertexCount;
             for (int i = 0; i < count; i++)
@@ -366,18 +350,27 @@ namespace NetworkSimulationApp
             }
             try
             {
-                Graph.RemoveVertex(Graph.Vertices.ElementAt(index));
+                bool CanRemove = true;
+                foreach (CommoditiesEntryViewModel cv in CommodityList)
+                {
+                    if (cv.OriginID == NodeID || cv.DestinationID == NodeID) CanRemove = false;
+                }
+                if (CanRemove)
+                {
+                    Graph.RemoveVertex(Graph.Vertices.ElementAt(index));
+                    _VList.Remove(NodeID);
+                }
+                else
+                {
+                    ExceptionMessage.Show("Can not remove this node, it is origin or destination in one or more Commodities");
+                }
             }
             catch (Exception ex)
             {
                 ExceptionMessage.Show("Exception removing vertex: " + ex.ToString());
             }
         }
-        private void _ChangeData(int NodeID)
-        {
-            NodeDataForm Nwin = new NodeDataForm(NodeID);
-            Nwin.Show();
-        }
+      
         #endregion
 
         #region public methods
@@ -386,21 +379,17 @@ namespace NetworkSimulationApp
         {
             if (NodeID > 0)
             {
-                if (_AddEdgeMode)
+                if (_Mode == 1)  //AddEdgeMode
                 {
                     _CreateEdge(NodeID);
                 }
-                else if (_RemoveEdgeMode)
+                else if (_Mode == 2)  //RemoveEdgeMode
                 {
                     _RemoveEdge(NodeID);
                 }
-                else if (_RemoveVertexMode)
+                else if (_Mode == 3) //RemoveVertexMode
                 {
                     _RemoveVertex(NodeID);
-                }
-                else if (_DataModeOn)
-                {
-                    _ChangeData(NodeID);
                 }
             }
 
@@ -452,15 +441,15 @@ namespace NetworkSimulationApp
             }
         }
 
-        public ICommand DataMode
+        public ICommand AddCommodity
         {
             get
             {
-                if (_dataMode == null)
+                if (_AddCommodity == null)
                 {
-                    _dataMode = new RelayCommand(this._ChangeDataMode, this._canChangeDataMode);
+                    _AddCommodity = new RelayCommand(this._AddNewCommodity, this._canAddCommodity);
                 }
-                return _dataMode;
+                return _AddCommodity;
             }
         }
         
@@ -530,20 +519,20 @@ namespace NetworkSimulationApp
                 return _start;
             }
         }
-        
-        public string DBColor
+
+        public ObservableCollection<CommoditiesEntryViewModel> CommodityList
         {
             get
             {
-                return _dbColor;
+                return _CommodityList;
             }
             set
             {
-                _dbColor = value;
-                NotifyPropertyChanged("DBColor");
+                _CommodityList = value;
+                NotifyPropertyChanged("Comm");
             }
         }
-       
+      
         #endregion
 
         #region INotifyPropertyChanged Implementation

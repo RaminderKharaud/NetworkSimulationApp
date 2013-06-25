@@ -8,11 +8,32 @@ namespace NetworkSimulationApp
 {
     public static class ExceptionMessage
     {
-        public static MessageBoxResult prob;
+        public static MessageBoxResult result;
         
         public static void Show(string error)
         {
-            prob = MessageBox.Show(error);
+            result = MessageBox.Show(error);
+        }
+        public static int ShowConfirmation(string error)
+        {
+            int code = 0;
+            string caption = "Warning";
+            MessageBoxButton button = MessageBoxButton.YesNoCancel;
+            MessageBoxImage icon = MessageBoxImage.Warning;
+            result = MessageBox.Show(error, caption, button, icon);
+            switch (result)
+            {
+                case MessageBoxResult.Yes:
+                    code = 1;
+                    break;
+                case MessageBoxResult.No:
+                    code = 0;
+                    break;
+                case MessageBoxResult.Cancel:
+                    code = 2;
+                    break;
+            }
+            return code;
         }
     }
 }
