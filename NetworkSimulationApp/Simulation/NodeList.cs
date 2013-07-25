@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 
-namespace NetworkSimulationApp
+namespace NetworkSimulationApp.Simulation
 {
     public static class NodeList
     {

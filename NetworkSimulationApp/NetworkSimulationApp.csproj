@@ -84,9 +84,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AdHocMessageBox\ExceptionMessage.cs" />
+    <Compile Include="NetGraphBits\NetEdge.cs" />
     <Compile Include="NodeDataForm.xaml.cs">
       <DependentUpon>NodeDataForm.xaml</DependentUpon>
     </Compile>
+    <Compile Include="SimulationSingleton\SimulationSingleton.cs" />
     <Compile Include="Simulation\AdHocFlow.cs" />
     <Compile Include="Simulation\AdHocNetSimulation.cs" />
     <Compile Include="Simulation\AdHocNode.cs" />
@@ -96,7 +99,6 @@
       <DependentUpon>SimulationWin.xaml</DependentUpon>
     </Compile>
     <Compile Include="ViewModels\CommoditiesEntryViewModel.cs" />
-    <Compile Include="ViewModels\ExceptionMessage.cs" />
     <Compile Include="ViewModels\MainWindowViewModel.cs" />
     <Compile Include="ViewModels\RelayCommand.cs" />
     <Page Include="MainWindow.xaml">
@@ -121,7 +123,6 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Simulation\NetEdge.cs" />
     <Compile Include="NetGraphBits\NetGraph.cs" />
     <Compile Include="NetGraphBits\NetGraphLayout.cs" />
     <Compile Include="NetGraphBits\NetVertex.cs" />

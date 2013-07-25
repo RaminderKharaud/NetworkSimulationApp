@@ -4,8 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-namespace NetworkSimulationApp
+namespace NetworkSimulationApp.AdHocMessageBox
 {
+    /// <summary>
+    /// File:                   ExceptionMessage.cs
+    /// 
+    /// Author:                 Raminderpreet Singh Kharaud
+    /// 
+    /// Date:       Feb 2013
+    /// 
+    /// Revision    1.1         No Revision Yet
+    /// 
+    /// Todo:                   Nothing
+    ///                         
+    /// Purpose:                Class has method to show error and confimation dialogboxes
+    /// </summary>
     public static class ExceptionMessage
     {
         public static MessageBoxResult result;

@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Threading;
 
-namespace NetworkSimulationApp
+namespace NetworkSimulationApp.Simulation
 {
     /// <summary>
     /// Interaction logic for SimulationWin.xaml
@@ -34,7 +34,7 @@ namespace NetworkSimulationApp
             int result = 0;
             CommonCalToken = new CancellationTokenSource();
             taskList.Clear();
-            ((AdHocNode)NodeList.Nodes.ElementAt(0).Value).FlowReady = true;
+          //  ((AdHocNode)NodeList.Nodes.ElementAt(0).Value).FlowReady = true;
         //    Thread node1 = new Thread(new ThreadStart(((AdHocNode)Nodes[1]).Start));
             
             try

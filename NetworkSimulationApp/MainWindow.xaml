@@ -4,25 +4,41 @@
         xmlns:graphsharp="clr-namespace:GraphSharp.Controls;assembly=GraphSharp.Controls"
         xmlns:local="clr-namespace:NetworkSimulationApp"
         xmlns:zoom="clr-namespace:WPFExtensions.Controls;assembly=WPFExtensions"
-        Title="MainWindow" Height="700" Width="1110">
+        Title="MainWindow" Height="700" Width="1112">
+     <!--
+     File:                  MainWindow.xaml
+   
+     Author:                Raminderpreet Singh Kharaud
+    
+     Date:       Feb 2013
+     
+     Revision    1.1        No Revision Yet
+     
+    Purpose:                This file contains XAML of controls, styles and Data Templates for application GUI
+    Knowldge Required       **In order to fully understand this code, reader should have basic knowldge of XAML of WPF
+    -->
+      
+    <!--DataContext is set to instance of MainWindowViewModel class-->
     <Window.DataContext>
         <local:MainWindowViewModel />
     </Window.DataContext>
+    <!--Window Resouces contains styles and DataTemplates for GUI controls-->  
     <Window.Resources>
-        <DataTemplate DataType="{x:Type local:CommoditiesEntryViewModel}">
+        <!--this DataTemplate implements controls for commodities-->
+        <DataTemplate x:Name="dtpCommodityControles" DataType="{x:Type local:CommoditiesEntryViewModel}">
             <Border BorderThickness="0 0 0 1" BorderBrush="White">
-            <StackPanel Orientation="Horizontal" Margin="5">
-                <Label Name="lblOrigin" Content="Origin:" Foreground="White"></Label>
-                    <ComboBox Name="cbxOrigin" ItemsSource="{Binding CombList}" SelectedItem="{Binding OriginID}" FontSize="14"/>
-                <Label Name="lblDest" Content="Dest:" Foreground="White"></Label>
-                <ComboBox Name="cbxDest" ItemsSource="{Binding CombList}" SelectedItem="{Binding DestinationID}" FontSize="14"/>
-                <Label Name="lblDemand" Content="Demand:" Foreground="White"></Label>
-                <TextBox Name="txtDemand" Width="50" FontSize="15" Text="{Binding StringDemand}" ></TextBox>
-                    <Button Name="btnDelete" Content="Del" Command="{Binding Delete}" Style="{DynamicResource GlassButton}" Width="10" Foreground="White" FontSize="14" Margin="5 0 0 0"></Button>
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Label Name="lblOrigin" Content="Origin:" Foreground="White"></Label>
+                        <ComboBox Name="cbxOrigin" ItemsSource="{Binding CombList}" SelectedItem="{Binding OriginID}" FontSize="14"/>
+                    <Label Name="lblDest" Content="Dest:" Foreground="White"></Label>
+                        <ComboBox Name="cbxDest" ItemsSource="{Binding CombList}" SelectedItem="{Binding DestinationID}" FontSize="14"/>
+                    <Label Name="lblDemand" Content="Demand:" Foreground="White"></Label>
+                    <TextBox Name="txtDemand" Width="50" FontSize="15" Text="{Binding StringDemand}" ></TextBox>
+                    <Button Name="btnDelete" Content=" Delete " Command="{Binding Delete}" Style="{DynamicResource GlassButton}" Foreground="White" FontSize="14" Margin="5 0 0 0"></Button>
                 </StackPanel>
             </Border>
         </DataTemplate>
-
+        <!--styles of buttons-->
         <Style x:Key="ButtonBackground" TargetType="{x:Type Border}">
             <Setter Property="Background">
                 <Setter.Value>
@@ -33,8 +49,8 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        
         <Style x:Key="GlassButton" TargetType="{x:Type Button}">
-           
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Button}">
@@ -51,12 +67,12 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background">
-                                <Setter.Value>
-                                    <LinearGradientBrush  EndPoint="0.504,1.5" StartPoint="0.504,0.03">
-                                        <GradientStop Color="Black" Offset="0"/>
-                                        <GradientStop Color="Gray" Offset="0.567"/>
-                                    </LinearGradientBrush>
-                                </Setter.Value>
+                                    <Setter.Value>
+                                        <LinearGradientBrush  EndPoint="0.504,1.5" StartPoint="0.504,0.03">
+                                            <GradientStop Color="Black" Offset="0"/>
+                                            <GradientStop Color="Gray" Offset="0.567"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
                                 </Setter>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
@@ -74,20 +90,19 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
+        <!--this Template implement controls for vertex-->
         <DataTemplate x:Key="demoTemplate" DataType="{x:Type local:NetVertex}">
             <Grid>
-                <Ellipse x:Name="VertexSurface" Height="15" Width="15"  Fill = "LightBlue"/>
-                <TextBlock Text="{Binding ID}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Ellipse x:Name="VertexSurface" Height="15" Width="15" Fill = "LightBlue"/>
+                <TextBlock Text="{Binding ID}" HorizontalAlignment="Center" VerticalAlignment="Center" /> 
             </Grid>
                 <DataTemplate.Triggers>
                     <Trigger Property = "IsMouseOver" Value = "True">
-                        <Setter TargetName = "VertexSurface" Property = "Fill"
-                    Value = "Yellow"/>
+                        <Setter TargetName = "VertexSurface" Property = "Fill" Value = "Yellow"/>
                     </Trigger>
                 </DataTemplate.Triggers>
         </DataTemplate>
-        
+        <!--style for vertex-->
         <Style TargetType="{x:Type graphsharp:VertexControl}">
             <Setter Property="Template">
                 <Setter.Value>
@@ -100,8 +115,11 @@
                 </Setter.Value>
             </Setter>
         </Style> 
+        
     </Window.Resources>
+    <!--main grid layout for window with two columns and two rows-->  
     <Grid Background="#333333">
+        
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width ="*"/>
             <ColumnDefinition Width="345"/>
@@ -110,6 +128,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+        
+        <!--Dockpanel layout in first row of grid layout has drop down menu for graph save and open commands-->
         <DockPanel Grid.Row="0" Background="#333333">
             <Menu DockPanel.Dock ="Top" 
                 HorizontalAlignment="Left"
@@ -120,21 +140,25 @@
                 </MenuItem>
             </Menu>
         </DockPanel>
+        <!--stack panle for right side of window has start buttons and commodity controls in it-->
         <StackPanel Grid.Column="1" Grid.Row="1" Background="#333333">
             <Button Grid.Column="1" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="30" Content="Start" Command="{Binding Path=Start}" Margin="10,21,0,0"  HorizontalAlignment="Center" Width="250" Height="50"/>
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Height="300" Width="320">
-                <StackPanel Name="stpCommodities" HorizontalAlignment="Center" Margin="10">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Height="300" Width="340">
+                <StackPanel Name="stpCommodities" HorizontalAlignment="Center" Margin="0 10 0 10">
                     <Label Name="lblcomm" Content="Commotidies" Foreground="White" FontSize="20" Margin="0 5 5 5" HorizontalAlignment="Left"></Label>
-                    <ItemsControl ItemsSource="{Binding CommodityList}"/>
+                    <!--this itemsControl is binded with commodity control list(commodityList in the MainWindowViewModel)-->
+                    <ItemsControl Name="CommodityControls" ItemsSource="{Binding CommodityList}"/>
                     <Button Name="btnAdd" HorizontalAlignment="Right" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="20" Command="{Binding Path=AddCommodity}" Content="+" Width="40" Height="40" Margin="5 5 5 5"></Button>
                 </StackPanel>
             </ScrollViewer>
         </StackPanel>
+        
         <Grid Grid.Row="1" Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/> 
             </Grid.RowDefinitions>
+            <!--button commands for graph creation/modification-->
             <StackPanel Grid.Row="0" Background="#CCCCCC" Height="35" Orientation="Horizontal" >
                 <Button x:Name="btnCreateGraph" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateGraph}" CommandParameter="AddNewGraph"  Content=" Create New Graph " Width="150" />
                 <Button x:Name="btnVertex" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateVertex}" CommandParameter="AddVertex"  Content=" New Vertex " Width="150" />
@@ -142,14 +166,17 @@
                 <Button x:Name="btnEdge" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateEdge}" CommandParameter="AddEdge" Content=" New Edge " Width="150"/>
                 <Button x:Name="btnRemoveEdge" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=RemoveEdge}" CommandParameter="RemoveEdge" Content=" Remove Edge " Width="150"/>
             </StackPanel>
-              <zoom:ZoomControl  Grid.Row="1"  Zoom="0.2" ZoomBoxOpacity="0.5" Background="White" >
-
+            <!--GraphSharp object in Zoom control. Graph is binded with Graph property in MainWindowViewModel-->
+            <zoom:ZoomControl  Grid.Row="1"  Zoom="0.2" ZoomBoxOpacity="0.5" Background="White" >
                 <local:NetGraphLayout x:Name="graphLayout" Margin="10"
-						Graph="{Binding Path=Graph}"
-						LayoutAlgorithmType="{Binding Path=LayoutAlgorithmType, Mode=OneWay}"
+					    Graph="{Binding Path=Graph}"
+					    LayoutAlgorithmType="{Binding Path=LayoutAlgorithmType, Mode=OneWay}"
 					    OverlapRemovalAlgorithmType="FSA" 
-                    HighlightAlgorithmType="Simple" />
+                        HighlightAlgorithmType="Simple" />
             </zoom:ZoomControl>
+            
         </Grid>
+        
     </Grid>
+      
 </Window>

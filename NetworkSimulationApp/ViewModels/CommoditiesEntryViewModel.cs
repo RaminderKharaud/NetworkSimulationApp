@@ -7,37 +7,75 @@ using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
-
+using NetworkSimulationApp.AdHocMessageBox;
 
 namespace NetworkSimulationApp
 {
+    /// <summary>
+    /// File:                   CommoditiesEntryViewModel.cs
+    /// 
+    /// Author:                 Raminderpreet Singh Kharaud
+    /// 
+    /// Date:       June 2013
+    /// 
+    /// Revision    1.1         No Revision Yet
+    /// 
+    /// Todo:                   Nothing
+    ///                         
+    /// Purpose:                This class bind commodity controls which are created and deleted dynamically in the application.
+    ///                         This Class is binded with CommodityControls item in WPF and it is also a Datacontext of DataTemple
+    ///                         called "dtpCommodityControles"
+    ///Knowldge Required        **In order to fully understand the implementation of this class, reader should have basic knowldge
+    ///                         of WPF and MVVM pattern**
+    /// </summary>
     class CommoditiesEntryViewModel : INotifyPropertyChanged
     {
+        #region Class Data
         private string _Demand;
-        public int DemandVal;
+        private int _DemandVal;
         private int _OriginID, _DestinationID;
-        private ObservableCollection<int> _CombList;
+        /// <summary>
+        /// any change to ObservableCOllection will update GUI
+        /// </summary>
+        private ObservableCollection<int> _CombList;  
+        /// <summary>
+        /// ParentList is the list of CommoditiesEntryViewModel from MainViewModel class
+        /// By having reference to this list, this class can delete itself dynamically from GUI
+        /// by removing itself from the combolist
+        /// </summary>
         public ObservableCollection<CommoditiesEntryViewModel> ParentList;
         private ICommand _delete;
+        #endregion
+        //constructor
         public CommoditiesEntryViewModel()
         {
-            _OriginID = 0;
-            _DestinationID = 0;
-            DemandVal = 0;
+            _OriginID = 1;
+            _DestinationID = 1;
+            _DemandVal = 0;
             _Demand = null;
             _CombList = new ObservableCollection<int>();
         }
-
+        /// <summary>
+        /// User can only delete row of controls if there are two or more controls
+        /// </summary>
+        /// <param name="param">not required for implementation</param>
+        /// <returns></returns>
         private bool _CanDelete(object param)
         {
-            if (DemandVal > 0) return true;
+            if (ParentList.Count > 1) return true;
             return false;
         }
+        /// <summary>
+        /// Delete itself from GUI dynamically if user press delete button
+        /// </summary>
+        /// <param name="param">not required for implementation</param>
         private void _DeleteMe(object param)
         {
             ParentList.Remove(this);
         }
+
         #region Properties
+        //Properties binded with controls in the GUI
         public ICommand Delete
         {
             get
@@ -49,6 +87,9 @@ namespace NetworkSimulationApp
                 return _delete;
             }
         }
+        /// <summary>
+        /// Combobox in GUI updated everytime user add or remove vertex 
+        /// </summary>
         public ObservableCollection<int> CombList
         {
             get
@@ -83,6 +124,11 @@ namespace NetworkSimulationApp
                 _DestinationID = value;
             }
         }
+        /// <summary>
+        /// Demand comes as string from textbox
+        /// If user enters invalid data like nonnumeric value,
+        /// error message will be shown when focus leave textbox
+        /// </summary>
         public string StringDemand
         {
             get
@@ -94,13 +140,25 @@ namespace NetworkSimulationApp
                 _Demand = value;
                 try
                 {
-                    DemandVal = int.Parse(_Demand);
+                    _DemandVal = int.Parse(_Demand);
                 }
                 catch (Exception ex)
                 {
-                    DemandVal = 0;
+                    _DemandVal = 0;
                     ExceptionMessage.Show("Demand has invalid value");
                 }
+            }
+        }
+        public int DemandVal
+        {
+            get
+            {
+                return _DemandVal;
+            }
+            set
+            {
+                _DemandVal = value;
+                StringDemand = _DemandVal.ToString();
             }
         }
         #endregion

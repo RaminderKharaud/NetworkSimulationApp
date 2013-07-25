@@ -6,22 +6,24 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows;
+using NetworkSimulationApp.AdHocMessageBox;
 
-namespace NetworkSimulationApp
+namespace NetworkSimulationApp.Simulation
 {
     /// <summary>
     /// This class is called by ModelView when user press the start button to start simulation.
     /// This class set up all the variables needed for the simulation to begin and call the actuall simulation loop
     /// </summary>
-    class AdHocNetSimulation
+    public class AdHocNetSimulation
     {
-        ConcurrentDictionary<int, AdHocNode> Nodes;
-        private bool _isRunning;
-        SimulationWin SimWindow;
+        protected volatile ConcurrentDictionary<int, AdHocNode> Nodes;
+        private SimulationWin _SimWindow;
+        private int[] _Vertexes;
+        private int[,] _Edges;
+        private int[,] _Commodities;
       
         public AdHocNetSimulation()
         {
-            this._isRunning = false;
             this.Nodes = new ConcurrentDictionary<int, AdHocNode>();
         }
         #region public methods
@@ -32,31 +34,27 @@ namespace NetworkSimulationApp
         /// at a given time. If no simulation is running then it will call private _Generate method to
         /// new simulation. If the Simulation is running it will show the message.
         /// </summary>
-        /// <param name="Graph"> Graph is a NetGraph Object with nodes and edges passed by refference from
+        /// <param name="Graph"> Graph is a NetGraph Object with nodes and edges passed by refference
         /// from ModelView</param>
-        public void Generator(NetGraph Graph)
+        public void Generator(int[] vertexes, int[,] edges, int[,] commodities)
         {
             string WinType = "";
-            this.IsRunning = false;
+            bool _IsRunning = false;
              foreach (Window window in Application.Current.Windows)
             {
                 WinType = window.GetType().ToString();
-                if (WinType.Equals("NetworkSimulationApp.SimulationWin")) this.IsRunning = true;
+                if (WinType.Equals("NetworkSimulationApp.SimulationWin")) _IsRunning = true;
              }
-            if (!this.IsRunning)
+            if (!_IsRunning)
             {
-                if (Graph.VertexCount > 2)
-                {
-                    this._Generate(Graph);
-                }
-                else
-                {
-                    MessageBoxResult simRunning = MessageBox.Show("Graph must have more than 2 nodes");
-                }
+                this._Vertexes = vertexes;
+                this._Edges = edges;
+                this._Commodities = commodities;
+                this._generate();
             }
             else
             {
-                MessageBoxResult simRunning = MessageBox.Show("Simulation already running");
+                ExceptionMessage.Show("Simulation already running");
             }
         }
         #endregion
@@ -66,45 +64,104 @@ namespace NetworkSimulationApp
         /// 
         /// </summary>
         /// <param name="Graph"></param>
-        private void _Generate(NetGraph Graph)
+        private void _generate()
         {
-            int Ecount = Graph.EdgeCount;
             int i = 0,j = 0;
             this.Nodes.Clear();
             Dictionary<int, int> GraphIDtoID = new Dictionary<int, int>();
 
-            foreach(NetVertex vertex in Graph.Vertices)
+            foreach (int id in _Vertexes)
             {
-                i = vertex.ID;
-                GraphIDtoID.Add(i, j);
-                this.Nodes.GetOrAdd(j, new AdHocNode(j++,i));
+                GraphIDtoID.Add(id, j);
+                this.Nodes.GetOrAdd(j, new AdHocNode(j++, id));
             }
-         
        //     new AdHocFlow(Graph.VertexCount);
             try
             {
                 int to, from;
-                for (i = 0; i < Ecount; i++)
+                for (i = 0; i < _Edges.GetLength(0); i++)
                 {
-                    to = Graph.Edges.ElementAt(i).Target.ID;
-                    from = Graph.Edges.ElementAt(i).Source.ID;
-                    to = GraphIDtoID[to];
+                    from = _Edges[i, 0];
+                    to = _Edges[i,1];
                     from = GraphIDtoID[from];
-                    this.Nodes[from].Targets.Add(this.Nodes[to].ID, this.Nodes[to]);
-                    this.Nodes[to].Sources.Add(this.Nodes[from].ID, this.Nodes[from]);
+                    to = GraphIDtoID[to];
+                    this.Nodes[from].Targets.Add(this.Nodes[to].ID);
+                    this.Nodes[to].Sources.Add(this.Nodes[from].ID);
                 }
+                for (i = 0; i < _Commodities.GetLength(0); i++)
+                {
+                    from = _Commodities[i, 0];
+                    to = _Commodities[i, 1];
+                    _Commodities[i, 0] = GraphIDtoID[from];
+                    _Commodities[i, 1] = GraphIDtoID[to];
+                }
+                this._TableFillAlgo();
             }
             catch (Exception e)
             { 
-                ExceptionMessage.Show("There was a problem with simulation: " + e.ToString());
+                ExceptionMessage.Show("There was a problem with Data provided to simulation: " + e.ToString());
             }
            
             NodeList.Nodes = this.Nodes;
-            SimWindow = new SimulationWin();
-            SimWindow.Show();
-            SimWindow.StartSim();
+            _SimWindow = new SimulationWin();
+            _SimWindow.Show();
+            _SimWindow.StartSim();
         }
 
+        private void _TableFillAlgo()
+        {
+            int origin = 0, dest = 0;
+            int[] predecessors;
+            int nextPred = 0,j = 0;
+            int target = 0;
+            for (int i = 0; i < this._Commodities.GetLength(0); i++)
+            {
+                origin = this._Commodities[i, 0];
+                dest = this._Commodities[i, 1];
+
+                this.Nodes[origin].MyDestinationsAndDemands.Add(dest, this._Commodities[i, 2]);
+
+                predecessors = this._GraphBFS(origin, dest);
+                if (predecessors != null)
+                {
+                    j = _Vertexes.Length;
+                    nextPred = dest;
+                    while (j >= 0)
+                    {
+                        target = nextPred;
+                        nextPred = predecessors[nextPred];
+                        this.Nodes[nextPred].ForwardingTable.Add(dest, target);
+                        if (nextPred == origin) break;
+                        j--;
+                    }
+                }
+            }
+        }
+        private int[] _GraphBFS(int origin, int dest)
+        {
+            HashSet<int> marked = new HashSet<int>();
+            Queue<int> queue = new Queue<int>();
+            int[] pred = new int[_Vertexes.Length];
+            int currID = origin;
+            queue.Enqueue(0);
+          //  marked.Add(0, 0);
+            while (queue.Count != 0)
+            {
+                currID = queue.Dequeue();
+                marked.Add(currID);
+                foreach (int id in this.Nodes[currID].Targets)
+                {
+                    if (marked.Add(id))
+                    {
+                        queue.Enqueue(id);
+                        pred[id] = currID;
+                        if (id == dest) return pred;
+                    }
+                }
+            }
+            return null;
+        }
+        /*
         private void _CreateCommodities(int VertexCount)
         {
             int Targets = 0, Dest = 0;
@@ -131,7 +188,6 @@ namespace NetworkSimulationApp
                         int [] path = _sortestPath(TargetList[target], Dest,commodities);
                         commodities[target] = path;
                     }
-                    
                 }
             }
         }
@@ -167,22 +223,11 @@ namespace NetworkSimulationApp
 
             return PossiblePath;
         }
-        
+        */
         #endregion
 
         #region properties
-        public bool IsRunning
-            {
-                get
-                {
-                    return _isRunning;
-                }
-                set
-                {
-                    _isRunning = value;
-                }
-
-            }
+       
         #endregion
     }
 

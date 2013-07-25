@@ -1,4 +1,4 @@
-﻿<Window x:Class="NetworkSimulationApp.SimulationWin"
+﻿<Window x:Class="NetworkSimulationApp.Simulation.SimulationWin"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Closing="Window_Closing"
