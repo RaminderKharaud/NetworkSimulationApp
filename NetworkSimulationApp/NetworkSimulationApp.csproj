@@ -93,7 +93,9 @@
     <Compile Include="Simulation\AdHocFlow.cs" />
     <Compile Include="Simulation\AdHocNetSimulation.cs" />
     <Compile Include="Simulation\AdHocNode.cs" />
+    <Compile Include="Simulation\AdHocNode.NodeStrategy.cs" />
     <Compile Include="Simulation\AdHocSignal.cs" />
+    <Compile Include="Simulation\NodeActivator.cs" />
     <Compile Include="Simulation\NodeList.cs" />
     <Compile Include="Simulation\SimulationWin.xaml.cs">
       <DependentUpon>SimulationWin.xaml</DependentUpon>

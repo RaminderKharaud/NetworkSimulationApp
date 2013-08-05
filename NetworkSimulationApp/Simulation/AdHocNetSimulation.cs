@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows;
 using NetworkSimulationApp.AdHocMessageBox;
+using System.Collections.Concurrent;
 
 namespace NetworkSimulationApp.Simulation
 {
@@ -16,15 +16,15 @@ namespace NetworkSimulationApp.Simulation
     /// </summary>
     public class AdHocNetSimulation
     {
-        protected volatile ConcurrentDictionary<int, AdHocNode> Nodes;
+      //  protected volatile ConcurrentDictionary<int, AdHocNode> Nodes;
         private SimulationWin _SimWindow;
         private int[] _Vertexes;
         private int[,] _Edges;
-        private int[,] _Commodities;
+        private float[,] _Commodities;
       
         public AdHocNetSimulation()
         {
-            this.Nodes = new ConcurrentDictionary<int, AdHocNode>();
+         //   NodeList.Nodes = new ConcurrentDictionary<int, AdHocNode>();
         }
         #region public methods
        
@@ -36,7 +36,7 @@ namespace NetworkSimulationApp.Simulation
         /// </summary>
         /// <param name="Graph"> Graph is a NetGraph Object with nodes and edges passed by refference
         /// from ModelView</param>
-        public void Generator(int[] vertexes, int[,] edges, int[,] commodities)
+        public void Generator(int[] vertexes, int[,] edges, float[,] commodities)
         {
             string WinType = "";
             bool _IsRunning = false;
@@ -67,13 +67,14 @@ namespace NetworkSimulationApp.Simulation
         private void _generate()
         {
             int i = 0,j = 0;
-            this.Nodes.Clear();
+            NodeList.Nodes.Clear();
             Dictionary<int, int> GraphIDtoID = new Dictionary<int, int>();
+            NodeActivator.NodeNums = this._Vertexes.Count();
 
             foreach (int id in _Vertexes)
             {
                 GraphIDtoID.Add(id, j);
-                this.Nodes.GetOrAdd(j, new AdHocNode(j++, id));
+                NodeList.Nodes.GetOrAdd(j, new AdHocNode(j++, id));
             }
        //     new AdHocFlow(Graph.VertexCount);
             try
@@ -81,19 +82,27 @@ namespace NetworkSimulationApp.Simulation
                 int to, from;
                 for (i = 0; i < _Edges.GetLength(0); i++)
                 {
-                    from = _Edges[i, 0];
-                    to = _Edges[i,1];
+                    from = this._Edges[i, 0];
+                    to = this._Edges[i,1];
                     from = GraphIDtoID[from];
                     to = GraphIDtoID[to];
-                    this.Nodes[from].Targets.Add(this.Nodes[to].ID);
-                    this.Nodes[to].Sources.Add(this.Nodes[from].ID);
+                    NodeList.Nodes[from].Targets.GetOrAdd(NodeList.Nodes[to].ID,true);
+                    NodeList.Nodes[from].MyTargetThresholds.GetOrAdd(NodeList.Nodes[to].ID, 50);
+                    NodeList.Nodes[from].TargetsAndFlowReached.GetOrAdd(NodeList.Nodes[to].ID, 0);
+                    NodeList.Nodes[from].TargetsAndMyFlowSent.GetOrAdd(NodeList.Nodes[to].ID, new ConcurrentDictionary<int, float>());
+                    NodeList.Nodes[from].TargetsAndFlowForwarded.GetOrAdd(NodeList.Nodes[to].ID, new ConcurrentDictionary<string, float>());
+                    NodeList.Nodes[to].Sources.Add(NodeList.Nodes[from].ID);
+                    NodeList.Nodes[to].SourcesAndFlowConsumed.GetOrAdd(NodeList.Nodes[from].ID, new ConcurrentDictionary<int, float>());
+                    NodeList.Nodes[to].SourcesAndFlowForwarded.GetOrAdd(NodeList.Nodes[from].ID, new ConcurrentDictionary<string, float []>());
+                    NodeList.Nodes[to].FLowBlockRateForSources.GetOrAdd(NodeList.Nodes[from].ID, 0);
+                    NodeList.Nodes[to].InFlow.GetOrAdd(NodeList.Nodes[from].ID, new ConcurrentDictionary<int, AdHocFlow>());
                 }
-                for (i = 0; i < _Commodities.GetLength(0); i++)
+                for (i = 0; i < this._Commodities.GetLength(0); i++)
                 {
-                    from = _Commodities[i, 0];
-                    to = _Commodities[i, 1];
-                    _Commodities[i, 0] = GraphIDtoID[from];
-                    _Commodities[i, 1] = GraphIDtoID[to];
+                    from = (int) this._Commodities[i, 0];
+                    to = (int) this._Commodities[i, 1];
+                    this._Commodities[i, 0] = GraphIDtoID[from];
+                    this._Commodities[i, 1] = GraphIDtoID[to];
                 }
                 this._TableFillAlgo();
             }
@@ -102,7 +111,7 @@ namespace NetworkSimulationApp.Simulation
                 ExceptionMessage.Show("There was a problem with Data provided to simulation: " + e.ToString());
             }
            
-            NodeList.Nodes = this.Nodes;
+        //    NodeList.Nodes = NodeList.Nodes;
             _SimWindow = new SimulationWin();
             _SimWindow.Show();
             _SimWindow.StartSim();
@@ -116,11 +125,12 @@ namespace NetworkSimulationApp.Simulation
             int target = 0;
             for (int i = 0; i < this._Commodities.GetLength(0); i++)
             {
-                origin = this._Commodities[i, 0];
-                dest = this._Commodities[i, 1];
+                origin = (int) this._Commodities[i, 0];
+                dest = (int) this._Commodities[i, 1];
 
-                this.Nodes[origin].MyDestinationsAndDemands.Add(dest, this._Commodities[i, 2]);
-
+                NodeList.Nodes[origin].MyDestinationsAndDemands.Add(dest, this._Commodities[i, 2]);
+                NodeList.Nodes[origin].MyDestinationsAndCurrentDemands.Add(dest, this._Commodities[i, 2]);
+                NodeList.Nodes[origin].FlowReached.GetOrAdd(dest, 0);
                 predecessors = this._GraphBFS(origin, dest);
                 if (predecessors != null)
                 {
@@ -130,7 +140,7 @@ namespace NetworkSimulationApp.Simulation
                     {
                         target = nextPred;
                         nextPred = predecessors[nextPred];
-                        this.Nodes[nextPred].ForwardingTable.Add(dest, target);
+                        NodeList.Nodes[nextPred].ForwardingTable.Add(dest, target);
                         if (nextPred == origin) break;
                         j--;
                     }
@@ -149,7 +159,7 @@ namespace NetworkSimulationApp.Simulation
             {
                 currID = queue.Dequeue();
                 marked.Add(currID);
-                foreach (int id in this.Nodes[currID].Targets)
+                foreach (int id in NodeList.Nodes[currID].Targets.Keys)
                 {
                     if (marked.Add(id))
                     {
@@ -170,11 +180,11 @@ namespace NetworkSimulationApp.Simulation
             
             for (int origin = 0; origin < VertexCount; origin++)
             {
-                Targets = this.Nodes[origin].Targets.Count;
+                Targets = NodeList.Nodes[origin].Targets.Count;
                 TargetList = new int[Targets + 1]; //origin node also go into check List
                 int[][] commodities = new int[Targets][];
                 j = 0;
-                foreach (KeyValuePair<int, AdHocNode> pair in this.Nodes[origin].Targets)
+                foreach (KeyValuePair<int, AdHocNode> pair in NodeList.Nodes[origin].Targets)
                 {
                     TargetList[j] = ((AdHocNode)pair.Value).ID;
                     ++j;

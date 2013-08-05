@@ -149,16 +149,19 @@ namespace NetworkSimulationApp
             }
 
             Graph = new NetGraph(true);
+          
             //following block of code try to read the file and create graph
             // to fully understant this code please read the graph file in notepad
             try
             {
                 string[] IDs = lines[0].Split(',');
+                bool flag = true;
                 foreach (string id in IDs)
                 {
                     int currID = int.Parse(id);
                     _VList.Add(currID);
                     Graph.AddVertex(new NetVertex(currID));
+                    
                 }
                 _IDCount = int.Parse(IDs[IDs.Length - 1]);
 
@@ -200,13 +203,14 @@ namespace NetworkSimulationApp
                         CommodityList.Add(cvm);
                     }
                 }
+                NotifyPropertyChanged("Graph");
             }
             catch (Exception ex)
             {
                 ExceptionMessage.Show("Something wrong with the Data in the File\n" + ex.ToString());
                 Graph = null;
             }
-            NotifyPropertyChanged("Graph");
+            
         }
        /// <summary>
        /// if graph is not null and has atleast one edge, it can be saved
@@ -412,7 +416,7 @@ namespace NetworkSimulationApp
             
             int[] vertexes = _VList.ToArray(); 
             int[,] edges = new int[Graph.EdgeCount,2];
-            int[,] commodities = new int[CommodityList.Count, 3];
+            float[,] commodities = new float[CommodityList.Count, 3];
             int i = 0;
             bool commoditiesExist = false;
             for (i = 0; i < Graph.EdgeCount; i++)

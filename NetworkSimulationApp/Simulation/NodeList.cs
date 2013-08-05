@@ -9,12 +9,20 @@ namespace NetworkSimulationApp.Simulation
 {
     public static class NodeList
     {
-        private static ConcurrentDictionary<int, AdHocNode> _nodes;
+        private static volatile ConcurrentDictionary<int, AdHocNode> _nodes;
         public static ConcurrentDictionary<int, AdHocNode> Nodes
         {
             get
             {
-                return _nodes;
+                if (_nodes == null)
+                {
+                    _nodes = new ConcurrentDictionary<int, AdHocNode>();
+                    return _nodes;
+                }
+                else
+                {
+                    return _nodes;
+                }
             }
             set
             {

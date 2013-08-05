@@ -32,7 +32,7 @@ namespace NetworkSimulationApp
     {
         #region Class Data
         private string _Demand;
-        private int _DemandVal;
+        private float _DemandVal;
         private int _OriginID, _DestinationID;
         /// <summary>
         /// any change to ObservableCOllection will update GUI
@@ -140,16 +140,21 @@ namespace NetworkSimulationApp
                 _Demand = value;
                 try
                 {
-                    _DemandVal = int.Parse(_Demand);
+                    _DemandVal = float.Parse(_Demand);
+                    if (_DemandVal > 1000)
+                    {
+                        _DemandVal = 0;
+                        ExceptionMessage.Show("Demand can not be more than 1000");
+                    }
                 }
                 catch (Exception ex)
                 {
                     _DemandVal = 0;
-                    ExceptionMessage.Show("Demand has invalid value");
+                    ExceptionMessage.Show("Demand has invalid value: "+ ex.ToString());
                 }
             }
         }
-        public int DemandVal
+        public float DemandVal
         {
             get
             {

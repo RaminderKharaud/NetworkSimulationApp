@@ -44,7 +44,7 @@ namespace NetworkSimulationApp.Simulation
                   taskList.Add(Task.Factory.StartNew(((AdHocNode)pair.Value).Start,CommonCalToken.Token));
                 //    taskList.Add(Task.Factory.StartNew(() => ((AdHocNode)pair.Value).Start(), CommonCalToken.Token));
                 }
-               
+                taskList.Add(Task.Factory.StartNew(NodeActivator.Start, CommonCalToken.Token));
             }
             catch (ThreadStateException e)
             {
