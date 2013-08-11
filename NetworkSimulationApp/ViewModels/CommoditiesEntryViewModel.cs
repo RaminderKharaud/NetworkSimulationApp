@@ -32,7 +32,7 @@ namespace NetworkSimulationApp
     {
         #region Class Data
         private string _Demand;
-        private float _DemandVal;
+        private double _DemandVal;
         private int _OriginID, _DestinationID;
         /// <summary>
         /// any change to ObservableCOllection will update GUI
@@ -140,7 +140,7 @@ namespace NetworkSimulationApp
                 _Demand = value;
                 try
                 {
-                    _DemandVal = float.Parse(_Demand);
+                    _DemandVal = double.Parse(_Demand);
                     if (_DemandVal > 1000)
                     {
                         _DemandVal = 0;
@@ -154,7 +154,7 @@ namespace NetworkSimulationApp
                 }
             }
         }
-        public float DemandVal
+        public double DemandVal
         {
             get
             {

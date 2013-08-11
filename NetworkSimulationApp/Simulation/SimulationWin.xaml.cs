@@ -61,10 +61,13 @@ namespace NetworkSimulationApp.Simulation
             // return code to the parent process.
             Environment.ExitCode = result;
         }
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        public void CancleThreads()
         {
             CommonCalToken.Cancel();
-            
+        }
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            this.CancleThreads();
         }
     }
 }

@@ -135,10 +135,12 @@
                 HorizontalAlignment="Left"
                 Background="#333333" BorderBrush ="Black">
                 <MenuItem Header="_File" Background="#333333" Foreground="White" FontSize="15">
-                    <MenuItem Header="_Open" Background="#333333" Foreground="White" FontSize="15" Command="{Binding Path=OpenGraph}" CommandParameter="OpenNewGraph"/>
+                    <MenuItem Header="_Open Graph File" Background="#333333" Foreground="White" FontSize="15" Command="{Binding Path=OpenGraph}" CommandParameter="Graph"/>
+                    <MenuItem Header="_Open Networkx File" Background="#333333" Foreground="White" FontSize="15" Command="{Binding Path=OpenGraph}" CommandParameter="Networkx"/>
                     <MenuItem Header="_Save" Background="#333333" Foreground="White" FontSize="15" Command ="{Binding Path=SaveGraph}" CommandParameter="SaveGraph" />
                 </MenuItem>
             </Menu>
+            
         </DockPanel>
         <!--stack panle for right side of window has start buttons and commodity controls in it-->
         <StackPanel Grid.Column="1" Grid.Row="1" Background="#333333">
@@ -151,6 +153,20 @@
                     <Button Name="btnAdd" HorizontalAlignment="Right" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="20" Command="{Binding Path=AddCommodity}" Content="+" Width="40" Height="40" Margin="5 5 5 5"></Button>
                 </StackPanel>
             </ScrollViewer>
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <Label Name="lblProfit" Content="Profit Factor:" Foreground="White"></Label>
+                <TextBox Name="txtProfit" Width="50" FontSize="15" Text="{Binding ProfitFactor}" ></TextBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <Label Name="lblCommoditiesNum" Content="Number of Commodities:" Foreground="White"></Label>
+                <TextBox Name="txtCommoditiesNum" Width="50" FontSize="15" Text="{Binding NumberOfCommodities}" ></TextBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <Label Name="lblDemandRange" Content="Demand Range:" Foreground="White"></Label>
+                <TextBox Name="txtMinDemand" Width="50" FontSize="15" Text="{Binding MinimumDemandValue}" ></TextBox>
+                <Label Name="lblTo" Content=" to " Foreground="White"></Label>
+                <TextBox Name="txtMaxDemand" Width="50" FontSize="15" Text="{Binding MaximumDemandValue}" ></TextBox>
+            </StackPanel>
         </StackPanel>
         
         <Grid Grid.Row="1" Grid.Column="0">
@@ -160,11 +176,16 @@
             </Grid.RowDefinitions>
             <!--button commands for graph creation/modification-->
             <StackPanel Grid.Row="0" Background="#CCCCCC" Height="35" Orientation="Horizontal" >
-                <Button x:Name="btnCreateGraph" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateGraph}" CommandParameter="AddNewGraph"  Content=" Create New Graph " Width="150" />
-                <Button x:Name="btnVertex" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateVertex}" CommandParameter="AddVertex"  Content=" New Vertex " Width="150" />
-                <Button x:Name="btnRemoveVertex" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=RemoveVertex}" CommandParameter="RemoveVertex" Content=" Remove Vertex " Width="150" />
-                <Button x:Name="btnEdge" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateEdge}" CommandParameter="AddEdge" Content=" New Edge " Width="150"/>
-                <Button x:Name="btnRemoveEdge" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=RemoveEdge}" CommandParameter="RemoveEdge" Content=" Remove Edge " Width="150"/>
+                <Button x:Name="btnCreateGraph" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateGraph}" CommandParameter="AddNewGraph"  Content=" Create New Graph " Width="143" />
+                <Button x:Name="btnVertex" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateVertex}" CommandParameter="AddVertex"  Content=" New Vertex " Width="143" />
+                <Button x:Name="btnRemoveVertex" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=RemoveVertex}" CommandParameter="RemoveVertex" Content=" Remove Vertex " Width="143" />
+                <Button x:Name="btnEdge" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=CreateEdge}" CommandParameter="AddEdge" Content=" New Edge " Width="143"/>
+                <Button x:Name="btnRemoveEdge" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Command="{Binding Path=RemoveEdge}" CommandParameter="RemoveEdge" Content=" Remove Edge " Width="143"/>
+                <Button  x:Name="tnRefresh" Style="{ DynamicResource GlassButton}" Foreground="White" Command="{Binding Path=RefreshGraph}" CommandParameter="RefreshGraph">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="Image/Redo.png" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
             <!--GraphSharp object in Zoom control. Graph is binded with Graph property in MainWindowViewModel-->
             <zoom:ZoomControl  Grid.Row="1"  Zoom="0.2" ZoomBoxOpacity="0.5" Background="White" >

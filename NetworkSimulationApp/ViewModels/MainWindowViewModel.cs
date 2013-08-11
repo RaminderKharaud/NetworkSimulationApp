@@ -58,7 +58,9 @@ namespace NetworkSimulationApp
         private int _FistNodeID;
         private string _layoutAlgorithmType;
         private string _openedFileName;
-       
+        private string _ProfitFactor, _NumberOfCommodities, _MinimumDemand, _MaximumDemand;
+        private double _ProfitFactorVal;
+        int _NumberOfCommoditiesVal,_MinimumDemandVal, _MaximumDemandVal;
         //Following are the ICommand binded with GUI through properties
         private ICommand _createGraph;
         private ICommand _createVertex; 
@@ -69,6 +71,7 @@ namespace NetworkSimulationApp
         private ICommand _saveGraph;
         private ICommand _AddCommodity;
         private ICommand _start;
+        private ICommand _Refresh;
         private int _Mode;
        // private List<NetVertex> _existingVertices;
         
@@ -129,7 +132,18 @@ namespace NetworkSimulationApp
         /// <param name="parameter">not required</param>
         private void _OpenGraph(object parameter)
         {
-           
+            string param = parameter.ToString();
+            if (param.Equals("Networkx"))
+            {
+                this._OpenNetworkXGraph();
+            }
+            else if (param.Equals("Graph"))
+            {
+                this._OpenDefaultGraph();
+            }
+        }
+        private void _OpenDefaultGraph()
+        {
             string[] lines = null;
            // Create an open file dialog box and only show *.grf files.
             try
@@ -155,7 +169,7 @@ namespace NetworkSimulationApp
             try
             {
                 string[] IDs = lines[0].Split(',');
-                bool flag = true;
+                
                 foreach (string id in IDs)
                 {
                     int currID = int.Parse(id);
@@ -210,8 +224,117 @@ namespace NetworkSimulationApp
                 ExceptionMessage.Show("Something wrong with the Data in the File\n" + ex.ToString());
                 Graph = null;
             }
-            
         }
+
+        private void _OpenNetworkXGraph()
+        {
+            string[] lines = null;
+            int CommodityNum = this._NumberOfCommoditiesVal;
+            int MinComm = this._MinimumDemandVal;
+            int MaxComm = this._MaximumDemandVal + 1;
+            int nodeID = 0;
+            HashSet<int> nodeList = new HashSet<int>();
+            HashSet<int> edgeOutNodes = new HashSet<int>();
+            Random random = new Random();
+            // Create an open file dialog box and only show *.grf files.
+            try
+            {
+                OpenFileDialog openDlg = new OpenFileDialog();
+                openDlg.Filter = "Text File |*.txt";
+                //read all lines of file
+                if (true == openDlg.ShowDialog())
+                {
+                    lines = File.ReadAllLines(openDlg.FileName);
+                }
+                _openedFileName = openDlg.FileName;
+            }
+            catch (IOException ex)
+            {
+                ExceptionMessage.Show("Could not open file\n" + ex.ToString());
+            }
+            Graph = new NetGraph(true);
+
+            try
+            {
+                foreach (string line in lines)
+                {
+                    string[] IDs = line.Split(' ');
+                    
+                    if (int.TryParse(IDs[0], out nodeID))
+                    {
+                        foreach (string id in IDs)
+                        {
+                            int currID = int.Parse(id);
+                            if(nodeList.Add(currID))
+                            {
+                                _VList.Add(currID);
+                                Graph.AddVertex(new NetVertex(currID));
+                            }
+                        }
+                    }
+                }
+                int from = 0, to = 0, curID = 0;
+                int count = Graph.VertexCount;
+
+                foreach (string line in lines)
+                {
+                    string[] IDs = line.Split(' ');
+
+                    if (int.TryParse(IDs[0], out nodeID))
+                    {
+                        for(int j = 1; j < IDs.Length; j++)
+                        {
+                            edgeOutNodes.Add(nodeID);
+                            curID = int.Parse(IDs[j]);
+                            for (int i = 0; i < count; i++)
+                            {
+                                if (Graph.Vertices.ElementAt(i).ID == nodeID) from = i;
+                                if (Graph.Vertices.ElementAt(i).ID == curID) to = i;
+                            }
+                            
+                            this._AddNewGraphEdge(Graph.Vertices.ElementAt(from), Graph.Vertices.ElementAt(to));
+                        }
+                    }
+                }
+
+                int x = 0;
+                bool valid = false;
+                int randomDemand = 0;
+                int randomID = 0;
+                CommodityList.RemoveAt(0);
+                for (int i = 0; i < CommodityNum; i++)
+                {
+                    if (x == edgeOutNodes.Count) x = 0;
+                    valid = false;
+                    while (!valid)
+                    {
+                        randomDemand = random.Next(MinComm, MaxComm);
+                        randomID = random.Next(0, nodeList.Count);
+                        if (edgeOutNodes.ElementAt(x) != nodeList.ElementAt(randomID))
+                        {
+                            valid = true;
+                            CommoditiesEntryViewModel cvm = new CommoditiesEntryViewModel();
+                            cvm.OriginID = edgeOutNodes.ElementAt(x);
+                            cvm.DestinationID = nodeList.ElementAt(randomID);
+                            cvm.DemandVal = randomDemand;
+                            cvm.CombList = _VList;
+                            cvm.ParentList = CommodityList;
+                            CommodityList.Add(cvm);
+
+                        }
+                    }
+                    x++;
+                }
+                NotifyPropertyChanged("Graph");
+            }
+            catch (Exception ex)
+            {
+                ExceptionMessage.Show("Something wrong with the Data in the File\n" + ex.ToString());
+                Graph = null;
+            }
+        }
+
+
        /// <summary>
        /// if graph is not null and has atleast one edge, it can be saved
        /// </summary>
@@ -265,6 +388,26 @@ namespace NetworkSimulationApp
             {
                 ExceptionMessage.Show("Exception saving graph " + ex.ToString());
             }
+        }
+        /// <summary>
+        /// Refresh button is only enable if Graph is not null
+        /// </summary>
+        /// <param name="parameter"></param>
+        /// <returns></returns>
+        private bool _CanRefresh(object parameter)
+        {
+            if (Graph != null) return true;
+            return false;
+        }
+        /// <summary>
+        /// this command refresh Graph if Graph is not loaded properly then
+        /// user should press this button
+        /// </summary>
+        /// <param name="parameter"></param>
+        private void _RefreshGraph(object parameter)
+        {
+            NotifyPropertyChanged("Graph");
+            if(_layoutAlgorithmType == null) LayoutAlgorithmType = "LinLog";
         }
         #endregion 
 
@@ -416,7 +559,7 @@ namespace NetworkSimulationApp
             
             int[] vertexes = _VList.ToArray(); 
             int[,] edges = new int[Graph.EdgeCount,2];
-            float[,] commodities = new float[CommodityList.Count, 3];
+            double[,] commodities = new double[CommodityList.Count, 3];
             int i = 0;
             bool commoditiesExist = false;
             for (i = 0; i < Graph.EdgeCount; i++)
@@ -440,7 +583,7 @@ namespace NetworkSimulationApp
             {
                 
               //  _Simulation.Generator(Graph);
-                SimulationSingleton.SimulationInstance.Generator(vertexes, edges, commodities);
+                SimulationSingleton.SimulationInstance.Generator(vertexes, edges, commodities,_ProfitFactorVal);
             }
             else
             {
@@ -465,6 +608,14 @@ namespace NetworkSimulationApp
             //  _existingVertices = new List<NetVertex>();
             _openedFileName = "";
             _Mode = 0;
+            _ProfitFactor = "1";
+            _ProfitFactorVal = 1;
+            _NumberOfCommoditiesVal = 10;
+            _NumberOfCommodities = "10";
+            _MinimumDemand = "5";
+            _MaximumDemand = "15";
+            _MinimumDemandVal = 5;
+            _MaximumDemandVal = 15;
             _CommodityList = new ObservableCollection<CommoditiesEntryViewModel>();
             _VList = new ObservableCollection<int>();
             _AddNewCommodity(null);
@@ -665,6 +816,89 @@ namespace NetworkSimulationApp
                 NotifyPropertyChanged("Graph");
             }
         }
+
+        public string ProfitFactor
+        {
+            get
+            {
+                return _ProfitFactor;
+            }
+            set
+            {
+                _ProfitFactor = value;
+                try
+                {
+                    _ProfitFactorVal = double.Parse(_ProfitFactor);
+                }
+                catch (Exception ex)
+                {
+                    _ProfitFactorVal = 1;
+                    ExceptionMessage.Show("Profit has invalid value: " + ex.ToString());
+                }
+            }
+        }
+
+        public string NumberOfCommodities
+        {
+            get
+            {
+                return _NumberOfCommodities;
+            }
+            set
+            {
+                _NumberOfCommodities = value;
+                try
+                {
+                    _NumberOfCommoditiesVal = int.Parse(_NumberOfCommodities);
+                }
+                catch (Exception ex)
+                {
+                    _NumberOfCommoditiesVal = 10;
+                    ExceptionMessage.Show("Number of Commodities has invalid value: " + ex.ToString());
+                }
+            }
+        }
+
+        public string MinimumDemandValue
+        {
+            get
+            {
+                return _MinimumDemand;
+            }
+            set
+            {
+                _MinimumDemand = value;
+                try
+                {
+                    _MinimumDemandVal = int.Parse(_MinimumDemand);
+                }
+                catch (Exception ex)
+                {
+                    _MinimumDemandVal = 5;
+                    ExceptionMessage.Show("Demand Range has invalid value: " + ex.ToString());
+                }
+            }
+        }
+        public string MaximumDemandValue
+        {
+            get
+            {
+                return _MaximumDemand;
+            }
+            set
+            {
+                _MaximumDemand = value;
+                try
+                {
+                    _MaximumDemandVal = int.Parse(_MaximumDemand);
+                }
+                catch (Exception ex)
+                {
+                    _MaximumDemandVal = 15;
+                    ExceptionMessage.Show("Demand Range has invalid value: " + ex.ToString());
+                }
+            }
+        }
         public ICommand OpenGraph
         {
             get
@@ -674,6 +908,18 @@ namespace NetworkSimulationApp
                     _openGraph = new RelayCommand(this._OpenGraph, this._CanOpenGraph);
                 }
                 return _openGraph;
+            }
+        }
+
+        public ICommand RefreshGraph
+        {
+            get
+            {
+                if (_Refresh == null)
+                {
+                    _Refresh = new RelayCommand(this._RefreshGraph, this._CanRefresh);
+                }
+                return _Refresh;
             }
         }
 

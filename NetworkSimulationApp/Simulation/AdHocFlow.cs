@@ -10,11 +10,11 @@ namespace NetworkSimulationApp.Simulation
     {
         public int OriginID;
         public int DestinationID;
-        public float OriginalFlow;
-        public float CurrFlow;
-        public float CommDemand;
+        public double OriginalFlow;
+        public double CurrFlow;
+        public double CommDemand;
         public int FlowCameFrom;
-        public float FlowBlockedByPrevNode;
+        public double FlowBlockedByPrevNode;
 
         public AdHocFlow Clone()
         {
@@ -29,24 +29,5 @@ namespace NetworkSimulationApp.Simulation
 
             return flow;
         }
-    //    public static int TotalFlowBlocked;
-    //    public static int TotalFlowAmount;
-    //    public static AdHocSignal[,] signal;
-    //    public static int VertexCount;
-    //    public AdHocFlow(int VertCount)
-    //    {
-    //        VertexCount = VertCount;
-    //        TotalFlowAmount = 0;
-    //        TotalFlowBlocked = 0;
-    //        signal = new AdHocSignal [VertCount,VertCount];
-    //        int i = 0, j = 0;
-    //        for (i = 0; i < VertCount; i++)
-    //        {
-    //            for (j = 0; j < VertCount; j++)
-    //            {
-    //                signal[i, j] = new AdHocSignal();
-    //            }
-    //        }
-    //    }
     }
 }
