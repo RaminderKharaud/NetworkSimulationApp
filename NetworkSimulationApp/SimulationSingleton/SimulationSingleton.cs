@@ -4,16 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NetworkSimulationApp.Simulation;
+using NetworkSimulationApp;
 
 namespace NetworkSimulationApp.Singleton
 {
     public sealed class SimulationSingleton
     {
         private static readonly AdHocNetSimulation _simulationInstance = new AdHocNetSimulation();
-
+        private static readonly NonThreadSimulation.AdHocNetSimulation _NsimulationInstance = new NonThreadSimulation.AdHocNetSimulation();
         private SimulationSingleton() { }
 
-        public static AdHocNetSimulation SimulationInstance
+        internal static AdHocNetSimulation SimulationInstance
         {
             get
             {
@@ -21,5 +22,12 @@ namespace NetworkSimulationApp.Singleton
             }
         }
 
+        internal static NonThreadSimulation.AdHocNetSimulation NonThreadedSimulationInstance
+        {
+            get
+            {
+                return _NsimulationInstance;
+            }
+        }
     }
 }

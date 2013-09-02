@@ -7,19 +7,24 @@ using System.Threading;
 
 namespace NetworkSimulationApp.Simulation
 {
-    static class NodeActivator
+    internal static class NodeActivator
     {
+        public static HashSet<int> WakeUpNodeList;
         private static volatile int _NodeNums;
         private static volatile bool _NodeDone;
         private static volatile int _NoChangeCounter;
         private static object _NodeNumsLock = new object();
         private static object _NodeDoneLock = new object();
         private static object _NoChangeCounterLock = new object();
+        private static object _NodeRemoveLock = new object();
         private static object _SimWindow = null;
         private static decimal _TotalWakeUpCalls;
         private static DateTime StartTime,EndTime;
-        public static double MaxFlow;
-        public static double TotalNumberOfEdges;
+        public static Dictionary<int, int> NodeSplitBySourceLog;
+        public static Dictionary<int, int> NodeSplitByTargetLog;
+        public static float MaxFlow;
+        public static float TotalNumberOfEdges;
+
         public static void Start(object obj)
         {
             CancellationToken token = (CancellationToken)obj;
@@ -30,15 +35,31 @@ namespace NetworkSimulationApp.Simulation
             Thread.Sleep(100);
             _TotalWakeUpCalls = 0;
             StartTime = DateTime.Now;
+            int length = 0;
+
             while (true)
             {
                 if (NodeDone)
                 {
                     NodeDone = false;
-                    randNum = random.Next(0, NodeNums);
-                    NodeList.Nodes[randNum].WakeUpCall = true;
-                    _TotalWakeUpCalls++;
+                    length = WakeUpNodeList.Count;
+                    randNum = random.Next(0, length);
+                    if (WakeUpNodeList.Count > 1)
+                    {
+                        NodeList.Nodes[WakeUpNodeList.ElementAt(randNum)].WakeUpCall = true;
+                        _TotalWakeUpCalls++;
+                    }
+                    else
+                    {
+                        AdHocNetSimulation.SimWindow.WriteOutput("All nodes have been failed");
+                        break;
+                    }
                 }
+             /*   if (WakeUpNodeList.Count < 2)
+                {
+                    AdHocNetSimulation.SimWindow.WriteOutput("All nodes have been failed");
+                    break;
+                } */
                 if (NoChangeCounter > NodeNums / 2)
                 {
                     NashEquilibrium = RoundCheck();
@@ -49,6 +70,7 @@ namespace NetworkSimulationApp.Simulation
                 {
                     break;
                 }
+                
                 Thread.Sleep(10);
             }
             if (NashEquilibrium) FinalizeSimulation();
@@ -63,10 +85,10 @@ namespace NetworkSimulationApp.Simulation
                 if (NodeDone)
                 {
                     NodeDone = false;
-                    NodeList.Nodes[i].WakeUpCall = true;
+                    NodeList.Nodes[WakeUpNodeList.ElementAt(i)].WakeUpCall = true;
                     i++;
                 }
-                if (i >= NodeNums || NoChangeCounter == 0)break;
+                if (i == WakeUpNodeList.Count || NoChangeCounter == 0)break;
             }
 
             if (NoChangeCounter == 0)
@@ -79,41 +101,60 @@ namespace NetworkSimulationApp.Simulation
             }
            
         }
+
+        public static void RemoveNode(int nodeID)
+        {
+            lock (_NodeRemoveLock)
+            {
+                AdHocNetSimulation.SimWindow.WriteOutput("Node: " + nodeID + " has failed");
+                if(WakeUpNodeList.Count > 1) WakeUpNodeList.Remove(nodeID);
+            }
+        }
+
         private static void FinalizeSimulation()
         {
-            Console.WriteLine("Equilibrium Reached");
-            double TotalCurrFlow = 0;
-            double TotalEdgesAlive = 0;
-            double EdgePercentage = 0;
-            double FlowPercentage = 0;
+            AdHocNetSimulation.SimWindow.WriteOutput("\n\n Equilibrium Reached");
+            float TotalCurrFlow = 0;
+            float FlowPercentage = 0;
             EndTime = DateTime.Now;
             TimeSpan time = EndTime.Subtract(StartTime);
             int totalTime = time.Milliseconds;
-            for (int i = 0; i < NodeNums; i++)
+            int length = WakeUpNodeList.Count;
+            int id = 0;
+
+            for (int i = 0; i < length; i++)
             {
-              //  Console.WriteLine(i + " : Final Utility is: " + NodeList.Nodes[i].CurrUtility);
-                TotalCurrFlow += NodeList.Nodes[i].getTotalCurrentFlow();
-                TotalEdgesAlive += NodeList.Nodes[i].getNumberOfEdgesAlive();
+                float flow = NodeList.Nodes[WakeUpNodeList.ElementAt(i)].getTotalCurrentFlow();
+                if(!float.IsNaN(flow)) TotalCurrFlow += flow;
+                if (TotalCurrFlow < 0) TotalCurrFlow = 0;
             }
 
             FlowPercentage = (TotalCurrFlow / MaxFlow) * 100;
-            EdgePercentage = (TotalEdgesAlive / TotalNumberOfEdges) * 100;
 
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("Time spent to reach Equilibrium: " + totalTime);
-            Console.WriteLine("Number of Nodes: " + NodeNums);
-            Console.WriteLine("Total Number of Node WakeUp Calls: " + _TotalWakeUpCalls);
-            Console.WriteLine("Total Demand Flow: " + MaxFlow);
-            Console.WriteLine("Total Current Flow: " + TotalCurrFlow);
-            Console.WriteLine("Flow percentage (Total Current Flow / Total Demand Flow): " + FlowPercentage);
-            Console.WriteLine();
-            Console.WriteLine();
+            foreach (KeyValuePair<int, int> pair in NodeSplitBySourceLog)
+            {
+                id = NodeList.Nodes[pair.Key].GraphID;
+                AdHocNetSimulation.SimWindow.WriteOutput("Utility of " + id + "A is: " + NodeList.Nodes[pair.Key].getUtility());
+                AdHocNetSimulation.SimWindow.WriteOutput("Utility of " + id + "B is: " + NodeList.Nodes[pair.Value].getUtility());
+            }
+            foreach (KeyValuePair<int, int> pair in NodeSplitByTargetLog)
+            {
+                id = NodeList.Nodes[pair.Key].GraphID;
+                AdHocNetSimulation.SimWindow.WriteOutput("Utility of " + id + "A is: " + NodeList.Nodes[pair.Key].getUtility());
+                AdHocNetSimulation.SimWindow.WriteOutput("Utility of " + id + "B is: " + NodeList.Nodes[pair.Value].getUtility());
+            }
+            
+            AdHocNetSimulation.SimWindow.WriteOutput("");
+            AdHocNetSimulation.SimWindow.WriteOutput("Time spent to reach Equilibrium: " + totalTime);
+            AdHocNetSimulation.SimWindow.WriteOutput("Number of Nodes: " + NodeNums);
+            AdHocNetSimulation.SimWindow.WriteOutput("Total Number of Node WakeUp Calls: " + _TotalWakeUpCalls);
+            AdHocNetSimulation.SimWindow.WriteOutput("Total Demand Flow: " + MaxFlow);
+            AdHocNetSimulation.SimWindow.WriteOutput("Total Current Flow: " + TotalCurrFlow);
+            AdHocNetSimulation.SimWindow.WriteOutput("Flow percentage (Total Current Flow / Total Demand Flow): " + FlowPercentage);
 
-         //   Console.WriteLine("Edge percentage: " + EdgePercentage);
             ((SimulationWin)_SimWindow).CancleThreads();
         }
-
+        #region properties
         public static int NodeNums
         {
             get
@@ -172,5 +213,6 @@ namespace NetworkSimulationApp.Simulation
                 _SimWindow = value;
             }
         }
+        #endregion
     }
 }

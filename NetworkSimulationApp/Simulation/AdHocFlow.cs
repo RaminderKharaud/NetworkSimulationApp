@@ -6,15 +6,14 @@ using System.Threading.Tasks;
 
 namespace NetworkSimulationApp.Simulation
 {
-    public class AdHocFlow 
+    internal class AdHocFlow 
     {
         public int OriginID;
         public int DestinationID;
-        public double OriginalFlow;
-        public double CurrFlow;
-        public double CommDemand;
+        public float OriginalFlow;
+        public float CurrFlow;
         public int FlowCameFrom;
-        public double FlowBlockedByPrevNode;
+        public float FlowBlockedByPrevNode;
 
         public AdHocFlow Clone()
         {
@@ -23,11 +22,11 @@ namespace NetworkSimulationApp.Simulation
             flow.DestinationID = this.DestinationID;
             flow.OriginalFlow = this.OriginalFlow;
             flow.CurrFlow = this.CurrFlow;
-            flow.CommDemand = this.CommDemand;
             flow.FlowCameFrom = this.FlowCameFrom;
             flow.FlowBlockedByPrevNode = this.FlowBlockedByPrevNode;
 
             return flow;
         }
+
     }
 }

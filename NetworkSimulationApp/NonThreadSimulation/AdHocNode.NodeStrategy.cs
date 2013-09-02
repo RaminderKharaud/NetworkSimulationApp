@@ -4,12 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-
-namespace NetworkSimulationApp.Simulation
+namespace NetworkSimulationApp.NonThreadSimulation
 {
     internal partial class AdHocNode
     {
-        private void _NodeStrategy()
+        public void NodeStrategy()
         {
             bool flag = false;
             int sourceCount = Sources.Count;
@@ -188,17 +187,18 @@ namespace NetworkSimulationApp.Simulation
 
         private void _ReArrange()
         {
-            int x = 0;
-
-            foreach (int i in this.Targets.Keys)
+            int x = 0, key = 0;
+            for (int j = 0; j < this.Targets.Count; j++)
             {
-                if (NodeList.Nodes[i].FlowBlockValueForSources[this.ID] > this.MyTargetThresholds[i])
+                key = this.Targets.ElementAt(j).Key;
+
+                if (NodeList.Nodes[key].FlowBlockValueForSources[this.ID] > this.MyTargetThresholds[key])
                 {
-                    this.Targets[i] = false;
+                    this.Targets[key] = false;
                 }
                 else
                 {
-                    this.Targets[i] = true;
+                    this.Targets[key] = true;
                 }
             }
 
@@ -222,7 +222,7 @@ namespace NetworkSimulationApp.Simulation
         private void _CurrDemandOptimization()
         {
             float amountReached = 0;
-            foreach (int dest in this.MyDestinationsAndCurrentDemands.Keys)
+            foreach (int dest in this.MyDestinationsAndDemands.Keys)
             {
                 amountReached = this.FlowReached[dest];
                 if (amountReached < 0) amountReached = 0;

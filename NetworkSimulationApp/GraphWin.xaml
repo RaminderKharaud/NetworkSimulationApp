@@ -1,0 +1,100 @@
+﻿<Window x:Class="NetworkSimulationApp.GraphWin"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="GraphWin" Height="276" Width="495">
+    <Window.Resources>
+        <Style x:Key="ButtonBackground" TargetType="{x:Type Border}">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush  EndPoint="0.504,1.5" StartPoint="0.504,0.03">
+                        <GradientStop Color="Gray" Offset="0"/>
+                        <GradientStop Color="Black" Offset="0.567"/>
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="GlassButton" TargetType="{x:Type Button}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="border" 
+                            CornerRadius="3" 
+                            BorderThickness="1" 
+                            Style="{DynamicResource ButtonBackground}"  
+                            BorderBrush="Transparent"
+                            RenderTransformOrigin="0.5,0.5">
+                            <ContentPresenter x:Name="ButtonContentPresenter"
+                            VerticalAlignment="Center"  
+                            HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush  EndPoint="0.504,1.5" StartPoint="0.504,0.03">
+                                            <GradientStop Color="Black" Offset="0"/>
+                                            <GradientStop Color="Gray" Offset="0.567"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter  TargetName="border" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush  EndPoint="0.504,1.5" StartPoint="0.504,0.03">
+                                            <GradientStop Color="Gray" Offset="0"/>
+                                            <GradientStop Color="Black" Offset="0.567"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Background="#333333">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Height="30" Background="#333333">
+            <Label x:Name="lblPath" Content="Path to Python: " Foreground="White"/>
+            <TextBox x:Name="txtPath" Width="321" FontSize="14"/>
+            <Button x:Name="btnSelect" Click="btnSelect_Click" Style="{ DynamicResource GlassButton}" Margin="8 0 0 0" Foreground="White" FontSize="15" Content="Select" Height="30" Width="50"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="1" Height="30" Background="#333333">
+            <Label x:Name="lblFilePath" Content="Output File Path: " Foreground="White"/>
+            <TextBox x:Name="txtFilePath" Width="321" FontSize="14"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="2" Height="30" Background="#333333" >
+            <Label x:Name="lblNodes" Content="Number of Nodes: " Foreground="White"/>
+            <TextBox x:Name="txtNodes" Width="70" FontSize="14"></TextBox>
+            <Label x:Name="lblProbability" Content="Probability for Edge Creation: " Margin="0 0 0 0" Foreground="White"/>
+            <TextBox x:Name="txtProbability" Width="70" RenderTransformOrigin="0.886,0.467" FontSize="14"></TextBox>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="3" Height="30" Background="#333333">
+            <Label x:Name="lblEdges" Content="Number of edges to attach from a new node to existing nodes: " Foreground="White"/>
+            <TextBox x:Name="txtEdges" Width="70" FontSize="14"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="4" Height="30" Background="#333333">
+            <Label x:Name="lblSeed" Content="Probility Seed (Optional): " Foreground="White"/>
+            <TextBox x:Name="txtSeed" Width="70" FontSize="14"/>
+            <Label x:Name="lblGraphType" Content="Graph Type: " Foreground="White"/>
+            <ComboBox x:Name="cmbGraph" SelectedIndex="0" SelectionChanged="cmbGraph_Selected" Width="170" FontSize="14">
+                <ComboBoxItem x:Name="barabasi_albert_graph">Barabasi Albert Graph</ComboBoxItem>
+                <ComboBoxItem x:Name="erdos_renyi_graph">Erdos Reny Graph</ComboBoxItem>
+                <ComboBoxItem x:Name="rendom_graph">Random Graph</ComboBoxItem>
+            </ComboBox>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="5" Background="#333333" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Button x:Name="btnCreateGraph" Click="btnCreateGraph_Click" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Content="Create Graph" Height="30" Width="143"/>
+        </StackPanel>
+    </Grid>
+</Window>

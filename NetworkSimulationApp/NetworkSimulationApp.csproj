@@ -85,24 +85,39 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="AdHocMessageBox\ExceptionMessage.cs" />
+    <Compile Include="GraphWin.xaml.cs">
+      <DependentUpon>GraphWin.xaml</DependentUpon>
+    </Compile>
     <Compile Include="NetGraphBits\NetEdge.cs" />
-    <Compile Include="NodeDataForm.xaml.cs">
-      <DependentUpon>NodeDataForm.xaml</DependentUpon>
+    <Compile Include="NonThreadSimulation\AdHocFlow.cs" />
+    <Compile Include="NonThreadSimulation\AdHocNetSimulation.cs" />
+    <Compile Include="NonThreadSimulation\AdHocNode.cs" />
+    <Compile Include="NonThreadSimulation\AdHocNode.NodeStrategy.cs" />
+    <Compile Include="NonThreadSimulation\LoopSimulation.cs" />
+    <Compile Include="NonThreadSimulation\NodeActivator.cs" />
+    <Compile Include="NonThreadSimulation\NodeList.cs" />
+    <Compile Include="NonThreadSimulation\NonThreadedSimulationWin.xaml.cs">
+      <DependentUpon>NonThreadedSimulationWin.xaml</DependentUpon>
     </Compile>
     <Compile Include="SimulationSingleton\SimulationSingleton.cs" />
     <Compile Include="Simulation\AdHocFlow.cs" />
     <Compile Include="Simulation\AdHocNetSimulation.cs" />
     <Compile Include="Simulation\AdHocNode.cs" />
     <Compile Include="Simulation\AdHocNode.NodeStrategy.cs" />
-    <Compile Include="Simulation\AdHocSignal.cs" />
     <Compile Include="Simulation\NodeActivator.cs" />
     <Compile Include="Simulation\NodeList.cs" />
     <Compile Include="Simulation\SimulationWin.xaml.cs">
       <DependentUpon>SimulationWin.xaml</DependentUpon>
     </Compile>
     <Compile Include="ViewModels\CommoditiesEntryViewModel.cs" />
+    <Compile Include="ViewModels\MainWindowViewModel.Commands.cs" />
     <Compile Include="ViewModels\MainWindowViewModel.cs" />
+    <Compile Include="ViewModels\MainWindowViewModel.Properties.cs" />
     <Compile Include="ViewModels\RelayCommand.cs" />
+    <Page Include="GraphWin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -115,7 +130,7 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="NodeDataForm.xaml">
+    <Page Include="NonThreadSimulation\NonThreadedSimulationWin.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

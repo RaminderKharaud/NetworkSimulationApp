@@ -3,20 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Collections.Concurrent;
 
-namespace NetworkSimulationApp.Simulation
+namespace NetworkSimulationApp.NonThreadSimulation
 {
     internal static class NodeList
     {
-        private static volatile ConcurrentDictionary<int, AdHocNode> _nodes;
-        public static ConcurrentDictionary<int, AdHocNode> Nodes
+        private static volatile Dictionary<int, AdHocNode> _nodes;
+        public static Dictionary<int, AdHocNode> Nodes
         {
             get
             {
                 if (_nodes == null)
                 {
-                    _nodes = new ConcurrentDictionary<int, AdHocNode>();
+                    _nodes = new Dictionary<int, AdHocNode>();
                     return _nodes;
                 }
                 else

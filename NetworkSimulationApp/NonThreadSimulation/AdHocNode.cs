@@ -3,30 +3,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
-using System.Collections.Concurrent;
 
-namespace NetworkSimulationApp.Simulation
+namespace NetworkSimulationApp.NonThreadSimulation
 {
-
     internal partial class AdHocNode
     {
         public HashSet<int> Sources;
-        public ConcurrentDictionary<int, byte> MyOrigins;
-        public ConcurrentDictionary<string, byte> MyEnvolvedments;
-        public ConcurrentDictionary<int, bool> Targets;
-        public ConcurrentDictionary<int, float> FlowBlockValueForSources;
-        public ConcurrentDictionary<int, ConcurrentDictionary<int, float>> SourcesAndFlowConsumed;
-        public ConcurrentDictionary<int, ConcurrentDictionary<string, float[]>> SourcesAndFlowForwarded;
-        public ConcurrentDictionary<int, ConcurrentDictionary<string, float>> TargetsAndFlowForwarded;
-        public ConcurrentDictionary<int, float> TargetsAndFlowReached;
-        public ConcurrentDictionary<int, float> MyTargetThresholds;
-        public ConcurrentDictionary<int, ConcurrentDictionary<int, float>> TargetsAndMyFlowSent;
-        public ConcurrentDictionary<int, int> ForwardingTable;
-        public ConcurrentDictionary<int, float> MyDestinationsAndDemands;
-        public ConcurrentDictionary<int, float> MyDestinationsAndCurrentDemands;
-        public ConcurrentDictionary<int, float> FlowReached;
-        public ConcurrentDictionary<int, ConcurrentDictionary<string, AdHocFlow>> InFlow;
+        public HashSet<int> MyOrigins;
+        public HashSet<string> MyEnvolvedments;
+        public Dictionary<int, bool> Targets;
+        public Dictionary<int, float> FlowBlockValueForSources;
+        public Dictionary<int, Dictionary<int, float>> SourcesAndFlowConsumed;
+        public Dictionary<int, Dictionary<string, float[]>> SourcesAndFlowForwarded;
+        public Dictionary<int, Dictionary<string, float>> TargetsAndFlowForwarded;
+        public Dictionary<int, float> TargetsAndFlowReached;
+        public Dictionary<int, float> MyTargetThresholds;
+        public Dictionary<int, Dictionary<int, float>> TargetsAndMyFlowSent;
+        public Dictionary<int, int> ForwardingTable;
+        public Dictionary<int, float> MyDestinationsAndDemands;
+        public Dictionary<int, float> MyDestinationsAndCurrentDemands;
+        public Dictionary<int, float> FlowReached;
+        public Dictionary<int, Dictionary<string, AdHocFlow>> InFlow;
         public int GraphID, ID;
         public bool WakeUpCall;
         private float _MinChange, _CurrUtility, _W;
@@ -35,98 +32,82 @@ namespace NetworkSimulationApp.Simulation
         private int _SourceNum, _DestNum;
         private byte[,] _Combinations;
         private int[] _CurrCombination;
-        private object _Lock;
-        Random random;
+        private bool _initialized,_failed;
+        private Random _Random;
 
         public AdHocNode(int id, int graphId, float profit, double failureRate)
         {
             this.ID = id;
             this.GraphID = graphId;
-            Targets = new ConcurrentDictionary<int, bool>();
+            Targets = new Dictionary<int, bool>();
             Sources = new HashSet<int>();
-            ForwardingTable = new ConcurrentDictionary<int, int>();
-            MyDestinationsAndDemands = new ConcurrentDictionary<int, float>();
-            MyDestinationsAndCurrentDemands = new ConcurrentDictionary<int, float>();
-            InFlow = new ConcurrentDictionary<int, ConcurrentDictionary<string, AdHocFlow>>();
-            FlowBlockValueForSources = new ConcurrentDictionary<int, float>();
-            MyTargetThresholds = new ConcurrentDictionary<int, float>();
-            FlowReached = new ConcurrentDictionary<int, float>();
-            TargetsAndFlowReached = new ConcurrentDictionary<int, float>();
-            SourcesAndFlowConsumed = new ConcurrentDictionary<int, ConcurrentDictionary<int, float>>();
-            SourcesAndFlowForwarded = new ConcurrentDictionary<int, ConcurrentDictionary<string, float[]>>();
-            TargetsAndMyFlowSent = new ConcurrentDictionary<int, ConcurrentDictionary<int, float>>();
-            TargetsAndFlowForwarded = new ConcurrentDictionary<int, ConcurrentDictionary<string, float>>();
-            MyOrigins = new ConcurrentDictionary<int, byte>();
-            MyEnvolvedments = new ConcurrentDictionary<string, byte>();
-            _Lock = new object();
+            MyOrigins = new HashSet<int>();
+            MyEnvolvedments = new HashSet<string>();
+            ForwardingTable = new Dictionary<int, int>();
+            MyDestinationsAndDemands = new Dictionary<int, float>();
+            MyDestinationsAndCurrentDemands = new Dictionary<int, float>();
+            InFlow = new Dictionary<int, Dictionary<string, AdHocFlow>>();
+            FlowBlockValueForSources = new Dictionary<int, float>();
+            MyTargetThresholds = new Dictionary<int, float>();
+            FlowReached = new Dictionary<int, float>();
+            TargetsAndFlowReached = new Dictionary<int, float>();
+            SourcesAndFlowConsumed = new Dictionary<int, Dictionary<int, float>>();
+            SourcesAndFlowForwarded = new Dictionary<int, Dictionary<string, float[]>>();
+            TargetsAndMyFlowSent = new Dictionary<int, Dictionary<int, float>>();
+            TargetsAndFlowForwarded = new Dictionary<int, Dictionary<string, float>>();
+            _Random = new Random();
             this._W = profit;
             this._MinChange = 0.001f;
             this._FailureRate = failureRate;
-            random = new Random();
         }
-
-        #region public methods
-        public void Start(object obj)
-        {
-            CancellationToken token = (CancellationToken)obj;
-            this._intializeCombinations();
-            double failure = 0;
-            while (true)
-            {
-                failure = random.NextDouble();
-                if (failure < this._FailureRate)
-                {
-                    this._KillMySelf();
-                    NodeActivator.RemoveNode(this.ID);
-                    break;
-                } 
-                this._NodeLoop();
-
-                if (token.IsCancellationRequested)
-                {
-                    break;
-                }
-            }
-        }
-        #endregion
 
         #region private methods
-        private void _NodeLoop()
-        {
-            this._FlowReciever();
-            if (WakeUpCall)
-            {
-                WakeUpCall = false;
-                this._NodeStrategy();
-                NodeActivator.NodeDone = true;
-            }
-        }
 
-        private void _FlowReciever()
+        public void FlowReciever()
         {
-            this._SourceNum = this.Sources.Count;
-            int i = 0;
-            for (int j = 0; j < this._SourceNum; j++)
+            double failure = _Random.NextDouble();
+
+            if (!this._initialized)
             {
-                i = this.Sources.ElementAt(j);
-                foreach (string key in this.InFlow[i].Keys)
+                this._initialized = true;
+                this._intializeCombinations();
+            }
+            
+            if (failure < this._FailureRate)
+            {
+                this._KillMySelf();
+                NodeActivator.RemoveNode(this.ID);
+                _failed = true;
+            }
+            if (!_failed)
+            {
+                this._SourceNum = this.Sources.Count;
+                int i = 0;
+                string key = null;
+
+                for (int j = 0; j < this._SourceNum; j++)
                 {
-                    if (this.InFlow[i][key] != null)
+                    i = this.Sources.ElementAt(j);
+                    for (int x = 0; x < this.InFlow[i].Count; x++)
                     {
-                        if (this.InFlow[i][key].DestinationID == this.ID)
+                        if (this.InFlow[i].ElementAt(x).Value.OriginID != -1)
                         {
-                            this._ConsumeFlow(this.InFlow[i][key].OriginID, this.InFlow[i][key].CurrFlow, i);
+                            if (this.InFlow[i].ElementAt(x).Value.DestinationID == this.ID)
+                            {
+                                this._ConsumeFlow(this.InFlow[i].ElementAt(x).Value.OriginID, this.InFlow[i].ElementAt(x).Value.CurrFlow, i);
+                            }
+                            else
+                            {
+                                key = this.InFlow[i].ElementAt(x).Key;
+                                this._ForwardFlow(key, i);
+                            }
+                            key = this.InFlow[i].ElementAt(x).Key;
+                            this.InFlow[i][key].OriginID = -1;
                         }
-                        else
-                        {
-                            AdHocFlow flow = this.InFlow[i][key].Clone();
-                            this._ForwardFlow(flow, i);
-                        }
-                        this.InFlow[i][key] = null;
                     }
                 }
+                this._SendMyOwnFlow();
             }
-            this._SendMyOwnFlow();
         }
         private void _ConsumeFlow(int OrID, float flowVal, int sourceID)
         {
@@ -138,7 +119,7 @@ namespace NetworkSimulationApp.Simulation
                 }
                 else
                 {
-                    this.SourcesAndFlowConsumed[sourceID].GetOrAdd(OrID, flowVal);
+                    this.SourcesAndFlowConsumed[sourceID].Add(OrID, flowVal);
                 }
                 NodeList.Nodes[OrID].FlowReached[this.ID] = flowVal;
             }
@@ -147,46 +128,57 @@ namespace NetworkSimulationApp.Simulation
                 Console.WriteLine("Node: " + this.ID + "was trying to consume flow from: " + sourceID + "\n" + ex.ToString());
             }
         }
-        private void _ForwardFlow(AdHocFlow flow, int sourceID)
+        private void _ForwardFlow(string flowID, int sourceID)
         {
-            int target = ForwardingTable[flow.DestinationID];
+            int target = ForwardingTable[this.InFlow[sourceID][flowID].DestinationID];
+            int OriginID = this.InFlow[sourceID][flowID].OriginID;
+            int DestinationID = this.InFlow[sourceID][flowID].DestinationID;
             float blockRate = 0;
-            float amount = flow.CurrFlow;
-            float flowCame = flow.CurrFlow;
+            float amount = this.InFlow[sourceID][flowID].CurrFlow;
+            float flowCame = this.InFlow[sourceID][flowID].CurrFlow;
             float amountblocked = 0;
-            string key = flow.OriginID + ":" + flow.DestinationID;
-
+            string key = OriginID + ":" + DestinationID;
             blockRate = this.GetBlockRate(sourceID);
             try
             {
                 if (Targets[target])
                 {
-                    if (flow.CurrFlow != 0)
+                    if (amount != 0)
                     {
                         amountblocked = (amount * blockRate);
                         amount = amount - amountblocked;
-                        flow.CurrFlow = amount;
-                        flow.FlowBlockedByPrevNode = amountblocked;
+
                     }
-                    flow.FlowCameFrom = this.ID;
-                    
                     if (NodeList.Nodes[target].InFlow[this.ID].ContainsKey(key))
                     {
-                        NodeList.Nodes[target].InFlow[this.ID][key] = flow;
+                        NodeList.Nodes[target].InFlow[this.ID][key].OriginID = OriginID;
+                        NodeList.Nodes[target].InFlow[this.ID][key].DestinationID = DestinationID;
+                        NodeList.Nodes[target].InFlow[this.ID][key].FlowCameFrom = this.ID;
+                        NodeList.Nodes[target].InFlow[this.ID][key].CurrFlow = amount;
+                        NodeList.Nodes[target].InFlow[this.ID][key].FlowBlockedByPrevNode = amountblocked;
+                        NodeList.Nodes[target].InFlow[this.ID][key].OriginalFlow = this.InFlow[sourceID][flowID].OriginalFlow;
                     }
                     else
                     {
-                        NodeList.Nodes[target].InFlow[this.ID].GetOrAdd(key, flow);
-                    }
+                        AdHocFlow flow = new AdHocFlow();
 
+                        flow.OriginID = OriginID;
+                        flow.DestinationID = DestinationID;
+                        flow.FlowCameFrom = this.ID;
+                        flow.CurrFlow = amount;
+                        flow.FlowBlockedByPrevNode = amountblocked;
+                        flow.OriginalFlow = this.InFlow[sourceID][flowID].OriginalFlow;
+
+                        NodeList.Nodes[target].InFlow[this.ID].Add(key, flow);
+                    }
                 }
                 else
                 {
-                    NodeList.Nodes[flow.OriginID].FlowReached[flow.DestinationID] = 0;
+                    NodeList.Nodes[OriginID].FlowReached[DestinationID] = 0;
                 }
-               // string key = flow.OriginID + ":" + flow.DestinationID;
+
                 float[] flowVals = new float[2];
-                flowVals[0] = flow.CurrFlow;
+                flowVals[0] = amount;
                 flowVals[1] = flowCame;
                 if (this.SourcesAndFlowForwarded[sourceID].ContainsKey(key))
                 {
@@ -194,7 +186,7 @@ namespace NetworkSimulationApp.Simulation
                 }
                 else
                 {
-                    this.SourcesAndFlowForwarded[sourceID].GetOrAdd(key, flowVals);
+                    this.SourcesAndFlowForwarded[sourceID].Add(key, flowVals);
                 }
                 if (this.TargetsAndFlowForwarded[target].ContainsKey(key))
                 {
@@ -202,7 +194,7 @@ namespace NetworkSimulationApp.Simulation
                 }
                 else
                 {
-                    this.TargetsAndFlowForwarded[target].GetOrAdd(key, flowVals[0]);
+                    this.TargetsAndFlowForwarded[target].Add(key, flowVals[0]);
                 }
             }
             catch (Exception ex)
@@ -214,7 +206,7 @@ namespace NetworkSimulationApp.Simulation
         {
             int destID = 0;
             float Currdemand;
-
+            string key = null;
             this._DestNum = this.MyDestinationsAndDemands.Count;
             try
             {
@@ -223,23 +215,30 @@ namespace NetworkSimulationApp.Simulation
                     destID = MyDestinationsAndDemands.ElementAt(j).Key;
 
                     Currdemand = MyDestinationsAndCurrentDemands.ElementAt(j).Value;
-                    AdHocFlow myFlow = new AdHocFlow();
-                    myFlow.FlowCameFrom = this.ID;
-                    myFlow.OriginID = this.ID;
-                    myFlow.DestinationID = destID;
-                    myFlow.OriginalFlow = Currdemand;
-                    myFlow.CurrFlow = Currdemand;
-                    myFlow.FlowCameFrom = this.ID;
-                    string key = this.ID + ":" + destID;
+
                     if (Targets[ForwardingTable[destID]])
                     {
+                        key = this.ID + ":" + destID;
                         if (NodeList.Nodes[ForwardingTable[destID]].InFlow[this.ID].ContainsKey(key))
                         {
-                            NodeList.Nodes[ForwardingTable[destID]].InFlow[this.ID][key] = myFlow;
+                            NodeList.Nodes[ForwardingTable[destID]].InFlow[this.ID][key].FlowCameFrom = this.ID;
+                            NodeList.Nodes[ForwardingTable[destID]].InFlow[this.ID][key].OriginID = this.ID;
+                            NodeList.Nodes[ForwardingTable[destID]].InFlow[this.ID][key].DestinationID = destID;
+                            NodeList.Nodes[ForwardingTable[destID]].InFlow[this.ID][key].OriginalFlow = Currdemand;
+                            NodeList.Nodes[ForwardingTable[destID]].InFlow[this.ID][key].CurrFlow = Currdemand;
+                            NodeList.Nodes[ForwardingTable[destID]].InFlow[this.ID][key].FlowCameFrom = this.ID;
                         }
                         else
                         {
-                            NodeList.Nodes[ForwardingTable[destID]].InFlow[this.ID].GetOrAdd(key, myFlow);
+                            AdHocFlow myFlow = new AdHocFlow();
+                            myFlow.FlowCameFrom = this.ID;
+                            myFlow.OriginID = this.ID;
+                            myFlow.DestinationID = destID;
+                            myFlow.OriginalFlow = Currdemand;
+                            myFlow.CurrFlow = Currdemand;
+                            myFlow.FlowCameFrom = this.ID;
+
+                            NodeList.Nodes[ForwardingTable[destID]].InFlow[this.ID].Add(key, myFlow);
                         }
                     }
                     if (TargetsAndMyFlowSent[ForwardingTable[destID]].ContainsKey(destID))
@@ -248,7 +247,7 @@ namespace NetworkSimulationApp.Simulation
                     }
                     else
                     {
-                        TargetsAndMyFlowSent[ForwardingTable[destID]].GetOrAdd(destID, Currdemand);
+                        TargetsAndMyFlowSent[ForwardingTable[destID]].Add(destID, Currdemand);
                     }
                 }
             }
@@ -260,28 +259,25 @@ namespace NetworkSimulationApp.Simulation
 
         public float GetBlockRate(int sourceID)
         {
-            lock (_Lock)
+            float totalFlow = 0;
+            float rate = 0;
+            foreach (KeyValuePair<string, float[]> pair in this.SourcesAndFlowForwarded[sourceID])
             {
-                float totalFlow = 0;
-                float rate = 0;
-                foreach (KeyValuePair<string, float[]> pair in this.SourcesAndFlowForwarded[sourceID])
-                {
-                    totalFlow += pair.Value[1];
-                }
-
-                if (totalFlow < this.FlowBlockValueForSources[sourceID]) return 1;
-
-                if (totalFlow > 0)
-                {
-                    rate = this.FlowBlockValueForSources[sourceID] / totalFlow;
-                }
-                else
-                {
-                    rate = 0;
-                }
-
-                return rate;
+                totalFlow += pair.Value[1];
             }
+
+            if (totalFlow < this.FlowBlockValueForSources[sourceID]) return 1;
+
+            if (totalFlow > 0)
+            {
+                rate = this.FlowBlockValueForSources[sourceID] / totalFlow;
+            }
+            else
+            {
+                rate = 0;
+            }
+
+            return rate;
         }
 
         private void _UpdateSuccessfulFlow()
@@ -322,9 +318,9 @@ namespace NetworkSimulationApp.Simulation
         {
             int length = NodeList.Nodes.Count;
             int[] predecessors;
-            string[] IDs;
-            int origin, dest, nextPred, target;
-            foreach (int id in this.MyOrigins.Keys)
+            string [] IDs;
+            int origin, dest,nextPred,target;
+            foreach (int id in this.MyOrigins)
             {
                 NodeList.Nodes[id].FlowReached[this.ID] = 0;
                 NodeList.Nodes[id].MyDestinationsAndCurrentDemands[this.ID] = 0;
@@ -336,13 +332,12 @@ namespace NetworkSimulationApp.Simulation
             }
             this._SendMyOwnFlow();
 
-            foreach (string key in this.MyEnvolvedments.Keys)
+            foreach (string key in this.MyEnvolvedments)
             {
                 IDs = key.Split(':');
                 origin = int.Parse(IDs[0]);
                 dest = int.Parse(IDs[1]);
                 predecessors = this._FindPath(origin, dest, length);
-                string commodity = null;
                 if (predecessors != null)
                 {
                     if (predecessors != null)
@@ -355,7 +350,7 @@ namespace NetworkSimulationApp.Simulation
                             nextPred = predecessors[nextPred];
                             if (!NodeList.Nodes[nextPred].ForwardingTable.ContainsKey(dest))
                             {
-                                NodeList.Nodes[nextPred].ForwardingTable.GetOrAdd(dest, target);
+                                NodeList.Nodes[nextPred].ForwardingTable.Add(dest, target);
                             }
                             else
                             {
@@ -367,11 +362,7 @@ namespace NetworkSimulationApp.Simulation
                             }
                             else
                             {
-                                commodity = origin + ":" + dest;
-                                if (!NodeList.Nodes[nextPred].MyEnvolvedments.ContainsKey(commodity))
-                                {
-                                    NodeList.Nodes[nextPred].MyEnvolvedments.GetOrAdd(commodity, 0);
-                                }
+                                NodeList.Nodes[nextPred].MyEnvolvedments.Add(origin + ":" + dest);
                             }
                             j--;
                         }
