@@ -259,13 +259,21 @@ namespace NetworkSimulationApp
                 ExceptionMessage.Show("Exception removing vertex: " + ex.ToString());
             }
         }
-
+        /// <summary>
+        /// this method is called when user click on the create Networkx
+        /// graph option under the File menu.
+        /// </summary>
         private void _CreateNetworkXGraph()
         {
             GraphWin graphWin = new GraphWin();
             graphWin.Show();
         }
-
+        /// <summary>
+        /// This method takes graph file data for networkx graph and 
+        /// creates vertexes, edges. It also creates random commodities with
+        /// valid paths. 
+        /// </summary>
+        /// <param name="lines">graph file text</param>
         private void _DrawGraphWithCommodities(string [] lines)
         {
             int CommodityNum = this._NumberOfCommoditiesVal;
@@ -278,7 +286,8 @@ namespace NetworkSimulationApp
             List<float> Demands = new List<float>();
             int OriginID = 0, DestID = 0;
             float demand = 0;
-            HashSet<int> nodeList = new HashSet<int>();
+            SortedSet<int> nodeList = new SortedSet<int>();
+         //   HashSet<int> nodeList = new HashSet<int>();
             HashSet<int> edgeOutNodes = new HashSet<int>();
             Random random = new Random();
             Dictionary<int, LinkedList<int>> EdgeMap = new Dictionary<int, LinkedList<int>>();
@@ -286,7 +295,7 @@ namespace NetworkSimulationApp
             Graph = new NetGraph(true);
             try
             {
-                foreach (string line in lines)
+                foreach (string line in lines) //create and add vertex to the graph
                 {
                     string[] IDs = line.Split(' ');
 
@@ -297,16 +306,22 @@ namespace NetworkSimulationApp
                             int currID = int.Parse(id);
                             if (nodeList.Add(currID))
                             {
-                                _VList.Add(currID);
+                               // _VList.Add(currID);
                                 Graph.AddVertex(new NetVertex(currID));
                             }
                         }
                     }
                 }
+                for (int i = 0; i < nodeList.Count; i++)
+                {
+                    _VList.Add(nodeList.ElementAt(i));
+                }
+                this._IDCount = this._VList.Count();
                 int from = 0, to = 0, curID = 0;
                 int count = Graph.VertexCount;
-
-                foreach (string line in lines)
+                bool valid = true;
+                //create edges, and keep record of vertex with edges going out for each valid vertex
+                foreach (string line in lines) 
                 {
                     string[] IDs = line.Split(' ');
 
@@ -315,20 +330,32 @@ namespace NetworkSimulationApp
                         EdgeMap.Add(nodeID, new LinkedList<int>());
                         for (int j = 1; j < IDs.Length; j++)
                         {
-                            edgeOutNodes.Add(nodeID);
                             curID = int.Parse(IDs[j]);
-                            EdgeMap[nodeID].AddLast(curID);
-                            for (int i = 0; i < count; i++)
+                            valid = true;
+                            if(EdgeMap.ContainsKey(curID))
                             {
-                                if (Graph.Vertices.ElementAt(i).ID == nodeID) from = i;
-                                if (Graph.Vertices.ElementAt(i).ID == curID) to = i;
+                                foreach (int id in EdgeMap[curID])
+                                {
+                                    if (id == nodeID) valid = false;
+                                }
                             }
-
-                            this._AddNewGraphEdge(Graph.Vertices.ElementAt(from), Graph.Vertices.ElementAt(to));
+                            if (valid)
+                            {
+                                edgeOutNodes.Add(nodeID);
+                                EdgeMap[nodeID].AddLast(curID);
+                                for (int i = 0; i < count; i++)
+                                {
+                                    if (Graph.Vertices.ElementAt(i).ID == nodeID) from = i;
+                                    if (Graph.Vertices.ElementAt(i).ID == curID) to = i;
+                                }
+                                this._AddNewGraphEdge(Graph.Vertices.ElementAt(from), Graph.Vertices.ElementAt(to));
+                            }
                         }
                     }
                 }
 
+                //commodity is choosed at random, if that commodity does not already exist
+                //check if it has valid path. if it exists then just add demand to it.
 
                 for (int i = 0; i < _NumberOfCommoditiesVal; i++)
                 {
@@ -355,7 +382,7 @@ namespace NetworkSimulationApp
                         this._path = null;
                         if (this._HasPath(OriginID, DestID, nodeList.Count, EdgeMap))
                         {
-                            this._GetSimulationEdges(OriginID, DestID);
+                           // this._GetSimulationEdges(OriginID, DestID);
                             Origins.Add(OriginID);
                             Destinations.Add(DestID);
                             Demands.Add(demand);
@@ -364,16 +391,6 @@ namespace NetworkSimulationApp
                     }
                 }
 
-
-                string edge = null;
-                this._SimEdges = new int[this._CommEdges.Count, 2];
-                for (int i = 0; i < this._CommEdges.Count; i++)
-                {
-                    edge = this._CommEdges.ElementAt(i);
-                    string[] split = edge.Split(':');
-                    this._SimEdges[i, 0] = int.Parse(split[0]);
-                    this._SimEdges[i, 1] = int.Parse(split[1]);
-                }
                 if (Origins.Count > 0) CommodityList.Remove(CommodityList.ElementAt(0));
                 for (int i = 0; i < Origins.Count; i++)
                 {
@@ -384,11 +401,7 @@ namespace NetworkSimulationApp
                     cvm.CombList = _VList;
                     cvm.ParentList = CommodityList;
                     CommodityList.Add(cvm);
-                 /*   if (EdgeMap[Origins[i]].Contains(Destinations[i]))
-                    {
-                     //   Console.WriteLine("\nOr: " + Origins[i] + " Dest: " + Destinations[i] + " Demand: " + Demands[i]);
-                        this._TotalSingleFlow += Demands[i];
-                    } */
+                
                 }
 
                 NotifyPropertyChanged("Graph");
@@ -399,7 +412,14 @@ namespace NetworkSimulationApp
                 Graph = null;
             }
         }
-
+        /// <summary>
+        /// This methods check whether the given commodity has valid path or not
+        /// </summary>
+        /// <param name="origin"></param>
+        /// <param name="dest"></param>
+        /// <param name="length"></param>
+        /// <param name="EdgeMap">dictionary that has outgoing edges for each valid node</param>
+        /// <returns></returns>
         private bool _HasPath(int origin, int dest, int length, Dictionary<int, LinkedList<int>> EdgeMap)
         {
             HashSet<int> marked = new HashSet<int>();
@@ -428,7 +448,13 @@ namespace NetworkSimulationApp
             }
             return false;
         }
-
+        /// <summary>
+        /// this method add edges if they are not already added to the valid edges
+        /// edges which are not part of any existing commodity will not be sent to 
+        /// the simulation
+        /// </summary>
+        /// <param name="origin"></param>
+        /// <param name="dest"></param>
         private void _GetSimulationEdges(int origin, int dest)
         {
             int source = dest;
@@ -452,7 +478,7 @@ namespace NetworkSimulationApp
         /// <param name="NodeID">NodeID is the ID of clicked vertex</param>
         public void NodeClickLogic(int NodeID)
         {
-            if (NodeID > 0)
+            if (NodeID >= 0)
             {
                 if (_Mode == 1)  //AddEdgeMode
                 {

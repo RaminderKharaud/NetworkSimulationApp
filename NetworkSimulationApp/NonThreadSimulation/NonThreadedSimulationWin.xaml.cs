@@ -12,6 +12,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Threading;
+using NetworkSimulationApp.AdHocMessageBox;
 
 namespace NetworkSimulationApp.NonThreadSimulation
 {
@@ -21,10 +23,12 @@ namespace NetworkSimulationApp.NonThreadSimulation
     public partial class NonThreadedSimulationWin : Window
     {
         bool cancelSim;
+        CancellationTokenSource CommonCalToken;
         public NonThreadedSimulationWin()
         {
             cancelSim = false;
             InitializeComponent();
+            this.Closing += Window_Closing;
         }
 
         public void WriteOutput(string output)
@@ -33,31 +37,22 @@ namespace NetworkSimulationApp.NonThreadSimulation
               DispatcherPriority.Background,
               new Action(() => this.txtOutput.Text += output + '\n'));
         }
-
-        public void StartSim(float singleFlow)
+        //create a new thread for simulation and call Loop Simulation
+        public void StartSim()
         {
-            int length = NodeList.Nodes.Count;
-            int WakeUpRange = NodeActivator.WakeUpNodeList.Count();
-            bool equilibrium = false;
-            NodeActivator.TotalWakeUpCalls = 0;
-            Random random = new Random();
-            NodeActivator.StartTime = DateTime.Now;
-            int rand = 0, i = 0;
+            NodeActivator.SimWin = this;
+            CommonCalToken = new CancellationTokenSource();
+            LoopSimulation loop = new LoopSimulation();
 
-            this.txtOutput.Text += "Total Single Edge Flow: " + singleFlow + "\n\n";
-            this.txtOutput.Text += "Performing Simulation...\n\n";
+            this.WriteOutput("\nTotal Single Edge Flow: " + NodeActivator.SingleEdgeFlow + "\n\n");
+            this.WriteOutput("Performing Simulation...\n\n");
 
-            for (i = 0; i < length; i++)
-            {
-                NodeList.Nodes[i].FlowReciever();
-            }
+            Task.Factory.StartNew(((LoopSimulation)loop).start, CommonCalToken.Token);
+        }
 
-            while (true)
-            {
-                rand = random.Next(0, WakeUpRange);
-                equilibrium = NodeActivator.loopWakeUpCall(rand);
-                if (equilibrium) break;
-            }
+        public void CancelThread()
+        {
+            CommonCalToken.Cancel();
         }
 
         private void btnSimulation_Click(object sender, RoutedEventArgs e)
@@ -65,13 +60,19 @@ namespace NetworkSimulationApp.NonThreadSimulation
             if (!cancelSim)
             {
                 cancelSim = true;
+               // CommonCalToken.Cancel();
                 this.txtOutput.Text += "\n\n Simulation Cancled";
+                NodeActivator.Cancel = true;
             }
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            cancelSim = true; ;
+            if (!NodeActivator.Cancel)
+            {
+                ExceptionMessage.Show("Simulation still running");
+                e.Cancel = true;
+            }
         }
     }
 }

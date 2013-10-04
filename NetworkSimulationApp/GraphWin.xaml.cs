@@ -20,7 +20,16 @@ using System.Security.AccessControl;
 namespace NetworkSimulationApp
 {
     /// <summary>
-    /// Interaction logic for GraphWin.xaml
+    /// File:                   GraphWin.xaml.cs
+    /// 
+    /// Author:                 Raminderpreet Singh Kharaud
+    /// 
+    /// Date:       August 2013
+    /// 
+    /// Revision    1.1         No Revision Yet
+    ///                         
+    /// Purpose:                Interaction logic for GraphWin.xaml: handles logic for 
+    ///                         the create networkx graph window
     /// </summary>
     public partial class GraphWin : Window
     {
@@ -31,10 +40,19 @@ namespace NetworkSimulationApp
             this._setControls();
             txtPath.Text = FilePath;
             if(MainWindowViewModel.OutputFilePath == null)
-                MainWindowViewModel.OutputFilePath = AppDomain.CurrentDomain.BaseDirectory + "GraphOutput.txt";
+                MainWindowViewModel.OutputFilePath = AppDomain.CurrentDomain.BaseDirectory;
             txtFilePath.Text = MainWindowViewModel.OutputFilePath;
         }
-
+        /// <summary>
+        /// When user user click on the create graph button, this method creates 
+        /// a networkx graph by starting process and write that file to the 
+        /// output path location from where the DrawGraph button will read file and
+        /// draw the graph on canvas. There any parameter is missing, user will get
+        /// error message. If python dont have writing permission to the output path, this method
+        /// will not know that.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btnCreateGraph_Click(object sender, RoutedEventArgs e)
         {
             string GraphCommand = null;
@@ -43,7 +61,7 @@ namespace NetworkSimulationApp
             string location = null;
             try
             {
-                location = txtFilePath.Text.Trim();
+                location = txtFilePath.Text.Trim() + "GraphOutput.txt";
                 MainWindowViewModel.OutputFilePath = location;
                // location = "C:\\Python33\\output\\GraphOutput.txt";
                 n = int.Parse(txtNodes.Text.Trim());
@@ -121,7 +139,11 @@ namespace NetworkSimulationApp
             }
             
         }
-        
+        /// <summary>
+        /// opens up file dialog box to select python.exe
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btnSelect_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -146,7 +168,10 @@ namespace NetworkSimulationApp
         {
             this._setControls();
         }
-
+        /// <summary>
+        /// this method enable or disaple text fields based on which graph type is
+        /// selected
+        /// </summary>
         private void _setControls()
         {
             this.txtProbability.IsEnabled = true;

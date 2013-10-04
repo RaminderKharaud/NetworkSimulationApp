@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NetworkSimulationApp.AdHocMessageBox;
 
 namespace NetworkSimulationApp.NonThreadSimulation
 {
+    /// <summary>
+    /// For code comments please refer to the same class under "Simulation" folder
+    /// </summary>
     internal partial class AdHocNode
     {
         public void NodeStrategy()
@@ -23,6 +27,7 @@ namespace NetworkSimulationApp.NonThreadSimulation
             this._ReArrange();
 
             this.WakeUpCall = false;
+            
             for (int i = 0; i < this._Combinations.GetLength(0); i++)
             {
                 this._TotalFlowSendAndReached = 0;
@@ -142,6 +147,7 @@ namespace NetworkSimulationApp.NonThreadSimulation
                 int counter = NodeActivator.NoChangeCounter;
                 NodeActivator.NoChangeCounter = counter + 1;
             }
+           
         }
 
 
@@ -187,7 +193,7 @@ namespace NetworkSimulationApp.NonThreadSimulation
 
         private void _ReArrange()
         {
-            int x = 0, key = 0;
+            int key = 0;
             for (int j = 0; j < this.Targets.Count; j++)
             {
                 key = this.Targets.ElementAt(j).Key;
@@ -202,21 +208,6 @@ namespace NetworkSimulationApp.NonThreadSimulation
                 }
             }
 
-            for (int i = 0; i < this._CurrCombination.Length; i++)
-            {
-                if (i >= Sources.Count)
-                {
-                    x = i - Sources.Count;
-                    if (Targets.ElementAt(x).Value)
-                    {
-                        this._CurrCombination[i] = 1;
-                    }
-                    else
-                    {
-                        this._CurrCombination[i] = 0;
-                    }
-                }
-            }
         }
 
         private void _CurrDemandOptimization()
@@ -233,21 +224,29 @@ namespace NetworkSimulationApp.NonThreadSimulation
 
         private void _intializeCombinations()
         {
-            int length = 0, j = 0, size = 0;
-
-            length = Sources.Count + Targets.Count;
-            this._CurrCombination = new int[length];
-
-            for (int x = 0; x < length; x++) this._CurrCombination[x] = 1;
-
-            size = (int)Math.Pow(2, length);
-            this._Combinations = new byte[size, length];
-
-            j = 0;
-            for (int r = 0; r <= size - 1; r++)
+            try
             {
-                this._GenerateCombinations(r, length, j);
-                j++;
+                int length = 0, j = 0, size = 0;
+
+                length = Sources.Count + Targets.Count;
+                this._CurrCombination = new int[length];
+
+                for (int x = 0; x < length; x++) this._CurrCombination[x] = 1;
+
+                size = (int)Math.Pow(2, length);
+                this._Combinations = new byte[size, length];
+
+                j = 0;
+                for (int r = 0; r <= size - 1; r++)
+                {
+                    this._GenerateCombinations(r, length, j);
+                    j++;
+                }
+            }
+            catch (Exception)
+            {
+                ExceptionMessage.Show("Thread is out of memory. Canceling Simulation");
+                NodeActivator.Cancel = true;
             }
         }
 

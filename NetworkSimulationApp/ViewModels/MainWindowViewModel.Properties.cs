@@ -155,6 +155,12 @@ namespace NetworkSimulationApp
                 try
                 {
                     _NodeFailureRateVal = float.Parse(_NodeFailureRate);
+                    if (_NodeFailureRateVal < 0 || _NodeFailureRateVal >= 1)
+                    {
+                        _NodeFailureRateVal = 0;
+                        _NodeFailureRate = "0";
+                        ExceptionMessage.Show("Node Failure Rate has to be between 0 and 1");
+                    }
                 }
                 catch (Exception ex)
                 {

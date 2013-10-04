@@ -105,70 +105,70 @@ namespace NetworkSimulationApp
                 if (true == openDlg.ShowDialog())
                 {
                     lines = File.ReadAllLines(openDlg.FileName);
-                }
-                _openedFileName = openDlg.FileName;
-            }
-            catch (IOException ex)
-            {
-                ExceptionMessage.Show("Could not open file\n" + ex.ToString());
-            }
 
-            Graph = new NetGraph(true);
+                    _openedFileName = openDlg.FileName;
 
-            //following block of code try to read the file and create graph
-            // to fully understant this code please read the graph file in notepad
-            try
-            {
-                string[] IDs = lines[0].Split(',');
+                    Graph = new NetGraph(true);
 
-                foreach (string id in IDs)
-                {
-                    int currID = int.Parse(id);
-                    _VList.Add(currID);
-                    Graph.AddVertex(new NetVertex(currID));
+                    //following block of code try to read the file and create graph
+                    // to fully understant this code please read the graph file in notepad
 
-                }
-                _IDCount = int.Parse(IDs[IDs.Length - 1]);
+                    string[] IDs = lines[0].Split(',');
 
-                string[] edges = lines[1].Split(',');
-                string[] temp;
-                int idTo, idFrom;
-                int from = 0, to = 0;
-                int count = Graph.VertexCount;
-                foreach (string part in edges)
-                {
-                    temp = part.Split('-');
-                    idFrom = int.Parse(temp[0]);
-                    idTo = int.Parse(temp[1]);
-
-                    for (int i = 0; i < count; i++)
+                    foreach (string id in IDs)
                     {
-                        if (Graph.Vertices.ElementAt(i).ID == idFrom) from = i;
-                        if (Graph.Vertices.ElementAt(i).ID == idTo) to = i;
-                    }
+                        int currID = int.Parse(id);
+                        _VList.Add(currID);
+                        Graph.AddVertex(new NetVertex(currID));
 
-                    //   _AddNewGraphEdge(_existingVertices[--idTo], _existingVertices[--idFrom]);
-                    _AddNewGraphEdge(Graph.Vertices.ElementAt(from), Graph.Vertices.ElementAt(to));
-                }
-                string[] commodities = lines[2].Split(',');
-                if (commodities.Length > 0) CommodityList.RemoveAt(0);
-                foreach (string part in commodities)
-                {
-                    temp = part.Split('-');
-                    from = int.Parse(temp[0]);
-                    to = int.Parse(temp[1]);
-                    if (from != to)
-                    {
-                        CommoditiesEntryViewModel cvm = new CommoditiesEntryViewModel();
-                        cvm.OriginID = from;
-                        cvm.DestinationID = to;
-                        cvm.DemandVal = int.Parse(temp[2]);
-                        cvm.CombList = _VList;
-                        cvm.ParentList = CommodityList;
-                        CommodityList.Add(cvm);
                     }
+                    _IDCount = _VList.Count;
+
+                    string[] edges = lines[1].Split(',');
+                    string[] temp;
+                    int idTo, idFrom;
+                    int from = 0, to = 0;
+                    int count = Graph.VertexCount;
+                    foreach (string part in edges)
+                    {
+                        temp = part.Split('-');
+                        idFrom = int.Parse(temp[0]);
+                        idTo = int.Parse(temp[1]);
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            if (Graph.Vertices.ElementAt(i).ID == idFrom) from = i;
+                            if (Graph.Vertices.ElementAt(i).ID == idTo) to = i;
+                        }
+
+                        //   _AddNewGraphEdge(_existingVertices[--idTo], _existingVertices[--idFrom]);
+                        _AddNewGraphEdge(Graph.Vertices.ElementAt(from), Graph.Vertices.ElementAt(to));
+                    }
+                    string[] commodities = lines[2].Split(',');
+                    if (commodities.Length > 0) CommodityList.RemoveAt(0);
+                    foreach (string part in commodities)
+                    {
+                        temp = part.Split('-');
+                        from = int.Parse(temp[0]);
+                        to = int.Parse(temp[1]);
+                        if (from != to)
+                        {
+                            CommoditiesEntryViewModel cvm = new CommoditiesEntryViewModel();
+                            cvm.OriginID = from;
+                            cvm.DestinationID = to;
+                            cvm.DemandVal = int.Parse(temp[2]);
+                            cvm.CombList = _VList;
+                            cvm.ParentList = CommodityList;
+                            CommodityList.Add(cvm);
+                        }
+                    }
+                    NotifyPropertyChanged("Graph");
                 }
-                NotifyPropertyChanged("Graph");
+            }
+            catch (IOException e)
+            {
+                ExceptionMessage.Show("Could Not Open File\n" + e.ToString());
+                Graph = null;
             }
             catch (Exception ex)
             {
@@ -184,14 +184,15 @@ namespace NetworkSimulationApp
             try
             {
                 OpenFileDialog openDlg = new OpenFileDialog();
-                openDlg.Filter = "Text File |*.doc;*.txt;*.grf";  //  *.doc";
+                openDlg.Filter = "Text File |*.doc;*.txt;*.grf";  
                 //read all lines of file
                 if (true == openDlg.ShowDialog())
                 {
                     lines = File.ReadAllLines(openDlg.FileName);
+
+                    this._openedFileName = openDlg.FileName;
+                    this._DrawGraphWithCommodities(lines);
                 }
-                this._openedFileName = openDlg.FileName;
-                this._DrawGraphWithCommodities(lines);
             }
             catch (IOException ex)
             {
@@ -276,7 +277,7 @@ namespace NetworkSimulationApp
                 ExceptionMessage.Show("Problem Reading output file" + ex.ToString());
             }
         }
-        
+
         /// <summary>
         /// Refresh button is only enable if Graph is not null
         /// </summary>
@@ -320,7 +321,7 @@ namespace NetworkSimulationApp
             //   _existingVertices.GetOrAdd(new NetVertex(_IDCount + 1));
             try
             {
-                _VList.Add(_IDCount + 1);
+                _VList.Add(this._IDCount + 1);
                 Graph.AddVertex(new NetVertex(_IDCount + 1));
                 NotifyPropertyChanged("Graph");
             }
@@ -450,43 +451,81 @@ namespace NetworkSimulationApp
             return false;
         }
         /// <summary>
-        /// TODO
+        /// When user press start button, the commodity list with valid paths and 
+        /// edge list for simulaiton is created before the simulation is called. Thread or non-thread
+        /// version of simulation is started according to the user selection
         /// </summary>
         /// <param name="parameter"></param>
         private void _Start(object parameter)
         {
-
             int[] vertexes = _VList.ToArray();
-            int degree = 10;
-           // int[,] edges = new int[Graph.EdgeCount, 2];
-            float[,] commodities = new float[CommodityList.Count, 3];
-            int i = 0;
+            Dictionary<int, LinkedList<int>> EdgeMap = new Dictionary<int, LinkedList<int>>();
+            float[,] commodities;
+            int i = 0,SourceID = 0, TargetID = 0;
+            int length = this._IDCount + 1;
             bool commoditiesExist = false;
-          /*  for (i = 0; i < Graph.EdgeCount; i++)
+            this._CommEdges = new HashSet<string>();
+            LinkedList<int> origins = new LinkedList<int>();
+            LinkedList<int> destinations = new LinkedList<int>();
+            LinkedList<float> demands = new LinkedList<float>();
+
+            foreach (int id in this._VList)
             {
-                edges[i, 0] = Graph.Edges.ElementAt(i).Source.ID;
-                edges[i, 1] = Graph.Edges.ElementAt(i).Target.ID;
-            } */
+                EdgeMap.Add(id, new LinkedList<int>());
+            }
+            for (i = 0; i < Graph.EdgeCount; i++)
+            {
+                SourceID = Graph.Edges.ElementAt(i).Source.ID;
+                TargetID = Graph.Edges.ElementAt(i).Target.ID;
+                if(EdgeMap.ContainsKey(SourceID) && EdgeMap.ContainsKey(TargetID))
+                    EdgeMap[SourceID].AddLast(TargetID);
+            } 
             i = 0;
+            //create commodity list with valid paths
             foreach (CommoditiesEntryViewModel cvm in CommodityList)
             {
-                commodities[i, 0] = cvm.OriginID;
-                commodities[i, 1] = cvm.DestinationID;
-                commodities[i, 2] = cvm.DemandVal;
-                commoditiesExist = true;
+                this._path = null;
+                SourceID = cvm.OriginID;
+                TargetID = cvm.DestinationID;
+                if (this._HasPath(SourceID, TargetID, length, EdgeMap))
+                {
+                    this._GetSimulationEdges(SourceID, TargetID);
+                    origins.AddLast(cvm.OriginID);
+                    destinations.AddLast(cvm.DestinationID);
+                    demands.AddLast(cvm.DemandVal);
+                    commoditiesExist = true;
+                }
                 i++;
             }
+            commodities = new float[origins.Count,3];
+            for (i = 0; i < origins.Count; i++)
+            {
+                commodities[i, 0] = origins.ElementAt(i);
+                commodities[i, 1] = destinations.ElementAt(i);
+                commodities[i, 2] = demands.ElementAt(i);
+            }
+            //only send edges that are involved in the commodities
+            string edge = null;
+            this._SimEdges = new int[this._CommEdges.Count, 2];
+            for (i = 0; i < this._CommEdges.Count; i++)
+            {
+                edge = this._CommEdges.ElementAt(i);
+                string[] split = edge.Split(':');
+                this._SimEdges[i, 0] = int.Parse(split[0]);
+                this._SimEdges[i, 1] = int.Parse(split[1]);
+            } 
+
             if (commoditiesExist)
             {
                 if (this._SimMode == 0)
                 {
                     SimulationSingleton.NonThreadedSimulationInstance.Generator(vertexes, this._SimEdges, commodities, _ProfitFactorVal,
-                    (float)this._MaximumDemandVal, degree, this._NodeFailureRateVal);
+                    (float)this._MaximumDemandVal, this._MaxDegreeVal, this._NodeFailureRateVal);
                 }
                 else
                 {
-                    SimulationSingleton.SimulationInstance.Generator(vertexes, this._SimEdges, commodities, _ProfitFactorVal, 
-                    (float) this._MaximumDemandVal, degree, this._NodeFailureRateVal);
+                    SimulationSingleton.SimulationInstance.Generator(vertexes, this._SimEdges, commodities, _ProfitFactorVal,
+                    (float)this._MaximumDemandVal, this._MaxDegreeVal, this._NodeFailureRateVal);
                 }
                
             }

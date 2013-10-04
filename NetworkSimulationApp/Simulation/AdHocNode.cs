@@ -8,6 +8,21 @@ using System.Collections.Concurrent;
 
 namespace NetworkSimulationApp.Simulation
 {
+    /// <summary>
+    /// File:                   AdHocNode.cs
+    /// 
+    /// Author:                 Raminderpreet Singh Kharaud
+    /// 
+    /// Date:       June 2013
+    /// 
+    /// Revision    1.1         No Revision Yet
+    /// 
+    /// Purpose:                This is a first part of node class. Due to its size, this class is split
+    ///                         into two partial classes. The second class is called AdHocNode.NodeStrategy.
+    ///                         This class holds all the logic for a node. Node is a separate thread(like realworld)
+    ///                         and everything is done by node logic in the network. This part of the class defines 
+    ///                         data structures that nodes need to operate and flow process logic.
+    /// </summary>
 
     internal partial class AdHocNode
     {
@@ -28,7 +43,7 @@ namespace NetworkSimulationApp.Simulation
         public ConcurrentDictionary<int, float> FlowReached;
         public ConcurrentDictionary<int, ConcurrentDictionary<string, AdHocFlow>> InFlow;
         public int GraphID, ID;
-        public bool WakeUpCall;
+        public bool _WakeUpCall;
         private float _MinChange, _CurrUtility, _W;
         private float _TotalFlowSendAndReached, _TotalFlowConsumed, _TotalFlowSent, _TotalFlowForwarded;
         private double _FailureRate;
@@ -36,9 +51,10 @@ namespace NetworkSimulationApp.Simulation
         private byte[,] _Combinations;
         private int[] _CurrCombination;
         private object _Lock;
+        private object _StrategyLock,_ChangeLock;
         Random random;
 
-        public AdHocNode(int id, int graphId, float profit, double failureRate)
+        public AdHocNode(int id, int graphId, float profit, double failureRate) //constructor
         {
             this.ID = id;
             this.GraphID = graphId;
@@ -59,6 +75,8 @@ namespace NetworkSimulationApp.Simulation
             MyOrigins = new ConcurrentDictionary<int, byte>();
             MyEnvolvedments = new ConcurrentDictionary<string, byte>();
             _Lock = new object();
+            _StrategyLock = new object();
+            _ChangeLock = new object();
             this._W = profit;
             this._MinChange = 0.001f;
             this._FailureRate = failureRate;
@@ -66,16 +84,25 @@ namespace NetworkSimulationApp.Simulation
         }
 
         #region public methods
+        /// <summary>
+        /// This method runs the thread with infinite loop. It call methods 
+        /// to process flow when node is sleeping. if node gets a wake up call
+        /// it will call the method to update node strategy.
+        /// </summary>
+        /// <param name="obj"></param>
         public void Start(object obj)
         {
             CancellationToken token = (CancellationToken)obj;
-            this._intializeCombinations();
+            this._intializeCombinations(); //intialize combinations
             double failure = 0;
+            WakeUpCall = true;
             while (true)
             {
                 failure = random.NextDouble();
-                if (failure < this._FailureRate)
+                //if failure is less then given rate and there still more nodes can fail
+                if (failure < this._FailureRate && NodeActivator.FailNum > 0)
                 {
+                    NodeActivator.FailNum = NodeActivator.FailNum - 1;
                     this._KillMySelf();
                     NodeActivator.RemoveNode(this.ID);
                     break;
@@ -86,27 +113,39 @@ namespace NetworkSimulationApp.Simulation
                 {
                     break;
                 }
+                if (NodeActivator.Cancel) break;
             }
         }
         #endregion
 
         #region private methods
+        /// <summary>
+        /// this method is used by start method
+        /// to call method for data processing 
+        /// </summary>
         private void _NodeLoop()
         {
             this._FlowReciever();
+            //if wakeup call than update strategy
             if (WakeUpCall)
             {
                 WakeUpCall = false;
-                this._NodeStrategy();
-                NodeActivator.NodeDone = true;
+                this.NodeStrategy();
+              //  NodeActivator.NodeDone = true;
             }
         }
 
+        /// <summary>
+        /// This method checks for all the flow comming in and process it
+        /// accordingly. If flow is for node itself, it pass it to comsume
+        /// method otherwise it is pass to forward method. After checking 
+        /// is done, it call the method to sent its own flow.
+        /// </summary>
         private void _FlowReciever()
         {
             this._SourceNum = this.Sources.Count;
             int i = 0;
-            for (int j = 0; j < this._SourceNum; j++)
+            for (int j = 0; j < this._SourceNum; j++) //check for all flows came in from all sources
             {
                 i = this.Sources.ElementAt(j);
                 foreach (string key in this.InFlow[i].Keys)
@@ -126,8 +165,16 @@ namespace NetworkSimulationApp.Simulation
                     }
                 }
             }
-            this._SendMyOwnFlow();
+            this._SendMyOwnFlow(); //send my own flow
         }
+        /// <summary>
+        /// This method comsumes the flow and send message to 
+        /// origin node that this much flow I recieved and keep 
+        /// record for source node
+        /// </summary>
+        /// <param name="OrID">origin node which sent the flow</param>
+        /// <param name="flowVal">total flow to consume</param>
+        /// <param name="sourceID"> source node from which the flow came in</param>
         private void _ConsumeFlow(int OrID, float flowVal, int sourceID)
         {
             try
@@ -147,6 +194,12 @@ namespace NetworkSimulationApp.Simulation
                 Console.WriteLine("Node: " + this.ID + "was trying to consume flow from: " + sourceID + "\n" + ex.ToString());
             }
         }
+        /// <summary>
+        /// This method block the flow according to the source it came 
+        /// from and forward rest of the flow and update its data accordingly
+        /// </summary>
+        /// <param name="flow">flow to send</param>
+        /// <param name="sourceID">source node it came from</param>
         private void _ForwardFlow(AdHocFlow flow, int sourceID)
         {
             int target = ForwardingTable[flow.DestinationID];
@@ -184,7 +237,7 @@ namespace NetworkSimulationApp.Simulation
                 {
                     NodeList.Nodes[flow.OriginID].FlowReached[flow.DestinationID] = 0;
                 }
-               // string key = flow.OriginID + ":" + flow.DestinationID;
+
                 float[] flowVals = new float[2];
                 flowVals[0] = flow.CurrFlow;
                 flowVals[1] = flowCame;
@@ -210,6 +263,10 @@ namespace NetworkSimulationApp.Simulation
                 Console.WriteLine("Node: " + this.ID + "was trying to forward  flow to: " + target + "\n" + ex.ToString());
             }
         }
+        /// <summary>
+        /// this method sends its own flow to all of its destinations 
+        /// according to the current flow that is reaching to destinations
+        /// </summary>
         private void _SendMyOwnFlow()
         {
             int destID = 0;
@@ -257,7 +314,14 @@ namespace NetworkSimulationApp.Simulation
                 Console.WriteLine("Node: " + this.ID + "was trying to send its own  flow to: " + ForwardingTable[destID] + "\n" + ex.ToString());
             }
         }
-
+        /// <summary>
+        /// this method calculates the block value for each 
+        /// flow according to the source node it came from. 
+        /// The block value is calculated for each flow according to
+        /// the total flow comming from that source node.
+        /// </summary>
+        /// <param name="sourceID"></param>
+        /// <returns></returns>
         public float GetBlockRate(int sourceID)
         {
             lock (_Lock)
@@ -283,7 +347,11 @@ namespace NetworkSimulationApp.Simulation
                 return rate;
             }
         }
-
+        /// <summary>
+        /// This method finds out how much flow is reaching 
+        /// to its destinations according to the current state of network
+        /// and update its values accordingly.
+        /// </summary>
         private void _UpdateSuccessfulFlow()
         {
             int prevID = this.ID;
@@ -317,25 +385,33 @@ namespace NetworkSimulationApp.Simulation
                 }
             }
         }
-
+        /// <summary>
+        /// This method is called by the node when it is going to fail.
+        /// It updates data structures in the connected node, update values
+        /// in its commodities and check if the commodities that go through
+        /// this node can find a new path. If there is a new path, it will update
+        /// the nodes forwarding talbe accordingly otherwise make the flow for that
+        /// commodity to zero.
+        /// </summary>
         private void _KillMySelf()
         {
             int length = NodeList.Nodes.Count;
             int[] predecessors;
             string[] IDs;
             int origin, dest, nextPred, target;
-            foreach (int id in this.MyOrigins.Keys)
+
+            foreach (int id in this.MyOrigins.Keys) //tell my origins that I wont be recieving anything
             {
                 NodeList.Nodes[id].FlowReached[this.ID] = 0;
                 NodeList.Nodes[id].MyDestinationsAndCurrentDemands[this.ID] = 0;
                 NodeList.Nodes[id].MyDestinationsAndDemands[this.ID] = 0;
             }
-            foreach (int key in this.MyDestinationsAndDemands.Keys)
+            foreach (int key in this.MyDestinationsAndDemands.Keys) 
             {
                 this.MyDestinationsAndCurrentDemands[key] = 0;
             }
             this._SendMyOwnFlow();
-
+            //update commodities that go through me
             foreach (string key in this.MyEnvolvedments.Keys)
             {
                 IDs = key.Split(':');
@@ -384,7 +460,14 @@ namespace NetworkSimulationApp.Simulation
                 }
             }
         }
-
+        /// <summary>
+        /// This method checkes if the commodities that this node 
+        /// is involved have another path or not
+        /// </summary>
+        /// <param name="origin">original node id</param>
+        /// <param name="dest">destination node id</param>
+        /// <param name="length">total number of nodes in the network</param>
+        /// <returns></returns>
         private int[] _FindPath(int origin, int dest, int length)
         {
             HashSet<int> marked = new HashSet<int>();
@@ -413,5 +496,23 @@ namespace NetworkSimulationApp.Simulation
             return null;
         }
         #endregion
+        public bool WakeUpCall
+        {
+            get
+            {
+                lock (_ChangeLock)
+                {
+                    return _WakeUpCall;
+                }
+            }
+            set
+            {
+                lock (_ChangeLock)
+                {
+                    _WakeUpCall = value;
+                }
+            }
+        }
     }
+
 }

@@ -8,6 +8,18 @@ using NetworkSimulationApp;
 
 namespace NetworkSimulationApp.Singleton
 {
+    /// <summary>
+    /// File:                   SimulationSingleton.cs
+    /// 
+    /// Author:                 Raminderpreet Singh Kharaud
+    /// 
+    /// Date:       July 2013
+    /// 
+    /// Revision    1.1         No Revision Yet
+    /// 
+    /// Purpose:                This is a singlton class that make sure only one instance of thread
+    ///                         simulation or non threaded simulation is created during the life of application process
+    /// </summary>
     public sealed class SimulationSingleton
     {
         private static readonly AdHocNetSimulation _simulationInstance = new AdHocNetSimulation();

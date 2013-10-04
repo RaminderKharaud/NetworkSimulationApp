@@ -60,9 +60,11 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="40"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" Grid.Row="0">
-            <TextBlock x:Name="txtOutput"></TextBlock>
-        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Orientation="Horizontal" Grid.Row="0">
+                <TextBlock x:Name="txtOutput"></TextBlock>
+            </StackPanel>
+        </ScrollViewer>
         <StackPanel Orientation="Horizontal" Grid.Row="1" Background="#CCCCCC" HorizontalAlignment="Center" VerticalAlignment="Center">
             <Button x:Name="btnSimulation" Click="btnSimulation_Click" Style="{ DynamicResource GlassButton}" Foreground="White" FontSize="15" Content="Stop Simulation" Height="30" Width="143"/>
         </StackPanel>

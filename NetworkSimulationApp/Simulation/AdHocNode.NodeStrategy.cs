@@ -1,4 +1,4 @@
-﻿using System;
+﻿ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,145 +7,181 @@ using System.Threading.Tasks;
 
 namespace NetworkSimulationApp.Simulation
 {
+    /// <summary>
+    /// File:                   AdHocNode.NodeStrategy.cs
+    /// 
+    /// Author:                 Raminderpreet Singh Kharaud
+    /// 
+    /// Date:       June 2013
+    /// 
+    /// Revision    1.1         No Revision Yet
+    /// 
+    /// Purpose:                This is the second part of AdHocNode class which has methods for
+    ///                         strategy updates and getter methods
+    /// </summary>
     internal partial class AdHocNode
     {
-        private void _NodeStrategy()
+        /// <summary>
+        /// This is the main strategy method which calls other methods to update all
+        /// information before it check all possible combination of edges to see which combination
+        /// gives the best utility. once it finds that combination, it calls method to implements that
+        /// utility and store the information.
+        /// </summary>
+        public bool NodeStrategy()
         {
-            bool flag = false;
-            int sourceCount = Sources.Count;
-            int[] MaxCombination = new int[_Combinations.GetLength(1)];
-            int[] CurrCombination = new int[_Combinations.GetLength(1)];
-            string[] IDs = null;
-            float MaxUtility = float.MinValue;
-            float Utility = 0;
-
-            this._UpdateSuccessfulFlow();
-            this._CurrDemandOptimization();
-            this._ReArrange();
-
-            this.WakeUpCall = false;
-            for (int i = 0; i < this._Combinations.GetLength(0); i++)
+            lock (_StrategyLock)
             {
-                this._TotalFlowSendAndReached = 0;
-                this._TotalFlowConsumed = 0;
-                this._TotalFlowSent = 0;
-                this._TotalFlowForwarded = 0;
+                bool flag = false;
+                int sourceCount = Sources.Count;
+                int[] MaxCombination = new int[_Combinations.GetLength(1)];
+                int[] CurrCombination = new int[_Combinations.GetLength(1)];
+                string[] IDs = null;
+                float MaxUtility = float.MinValue;
+                float Utility = 0;
 
-                for (int x = 0; x < this._Combinations.GetLength(1); x++)
-                {
-                    CurrCombination[x] = this._Combinations[i, x];
-                }
+                this._UpdateSuccessfulFlow();
+                this._CurrDemandOptimization();
+                this._ReArrange();
 
-                for (int j = 0; j < this._Combinations.GetLength(1); j++)
+               // this.WakeUpCall = false;
+                //check utility for each combination
+                for (int i = 0; i < this._Combinations.GetLength(0); i++)
                 {
-                    if (this._Combinations[i, j] == 1)
+                    this._TotalFlowSendAndReached = 0;
+                    this._TotalFlowConsumed = 0;
+                    this._TotalFlowSent = 0;
+                    this._TotalFlowForwarded = 0;
+
+                    for (int x = 0; x < this._Combinations.GetLength(1); x++)
                     {
-                        if (j < sourceCount)
+                        CurrCombination[x] = this._Combinations[i, x];
+                    }
+
+                    for (int j = 0; j < this._Combinations.GetLength(1); j++)
+                    {
+                        if (this._Combinations[i, j] == 1)
                         {
-                            int sourceID = Sources.ElementAt(j);
-                            float TotalVal = 0;
-                            float threshold = NodeList.Nodes[sourceID].MyTargetThresholds[this.ID];
-
-                            KeyValuePair<string, float>[] Fpairs = NodeList.Nodes[sourceID].TargetsAndFlowForwarded[this.ID].ToArray();
-                            KeyValuePair<int, float>[] Mpairs = NodeList.Nodes[sourceID].TargetsAndMyFlowSent[this.ID].ToArray();
-
-                            foreach (KeyValuePair<string, float> pair in Fpairs)
+                            if (j < sourceCount) //check if the current edge in the combination is source or target
                             {
-                                IDs = pair.Key.Split(':');
-                                int DestID = int.Parse(IDs[1]);
-                                if (this.ID == DestID)
-                                {
-                                    this._TotalFlowConsumed += pair.Value;
-                                }
-                                else
-                                {
-                                    TotalVal += pair.Value;
-                                }
-                            }
-                            foreach (KeyValuePair<int, float> pair in Mpairs)
-                            {
-                                if (this.ID == pair.Key)
-                                {
-                                    _TotalFlowConsumed += pair.Value;
-                                }
-                                else
-                                {
-                                    TotalVal += pair.Value;
-                                }
-                            }
+                                int sourceID = Sources.ElementAt(j);
+                                float TotalVal = 0;
+                                float threshold = NodeList.Nodes[sourceID].MyTargetThresholds[this.ID];
 
-                            if (TotalVal > threshold)
-                            {
-                                this._TotalFlowForwarded += TotalVal - threshold;
-                            }
-                        }
-                        else
-                        {
-                            int x = j - sourceCount;
-                            int targetID = Targets.ElementAt(x).Key;
+                                KeyValuePair<string, float>[] Fpairs = NodeList.Nodes[sourceID].TargetsAndFlowForwarded[this.ID].ToArray();
+                                KeyValuePair<int, float>[] Mpairs = NodeList.Nodes[sourceID].TargetsAndMyFlowSent[this.ID].ToArray();
 
-                            foreach (KeyValuePair<int, float> pair in this.FlowReached)
-                            {
-                                if (this.ForwardingTable[pair.Key] == targetID)
+                                foreach (KeyValuePair<string, float> pair in Fpairs)
                                 {
-                                    if (this.checkTargetDestination(targetID))
+                                    IDs = pair.Key.Split(':');
+                                    int DestID = int.Parse(IDs[1]);
+                                    if (this.ID == DestID)
                                     {
-                                        this._TotalFlowSendAndReached += this.MyDestinationsAndDemands[targetID];
+                                        this._TotalFlowConsumed += pair.Value;
                                     }
                                     else
                                     {
-                                        this._TotalFlowSendAndReached += pair.Value;
+                                        TotalVal += pair.Value;
                                     }
                                 }
-                            }
+                                foreach (KeyValuePair<int, float> pair in Mpairs)
+                                {
+                                    if (this.ID == pair.Key)
+                                    {
+                                        _TotalFlowConsumed += pair.Value;
+                                    }
+                                    else
+                                    {
+                                        TotalVal += pair.Value;
+                                    }
+                                }
 
-                            foreach (KeyValuePair<int, float> pair in this.TargetsAndMyFlowSent[targetID])
+                                if (TotalVal > threshold)
+                                {
+                                    this._TotalFlowForwarded += TotalVal - threshold;
+                                }
+                            }
+                            else // if the edge is target
                             {
-                                this._TotalFlowSent += pair.Value;
+                                int x = j - sourceCount;
+                                int targetID = Targets.ElementAt(x).Key;
+
+                                foreach (KeyValuePair<int, float> pair in this.FlowReached)
+                                {
+                                    if (this.ForwardingTable[pair.Key] == targetID)
+                                    {
+                                        if (this.checkTargetDestination(targetID))
+                                        {
+                                            this._TotalFlowSendAndReached += this.MyDestinationsAndDemands[targetID];
+                                        }
+                                        else
+                                        {
+                                            this._TotalFlowSendAndReached += pair.Value;
+                                        }
+                                    }
+                                }
+
+                                foreach (KeyValuePair<int, float> pair in this.TargetsAndMyFlowSent[targetID])
+                                {
+                                    this._TotalFlowSent += pair.Value;
+                                }
                             }
                         }
                     }
-                }
-                Utility = ((this._TotalFlowSendAndReached * this._W) + this._TotalFlowConsumed) - (this._TotalFlowSent + this._TotalFlowForwarded);
+                    //calculate utility for current combination
+                    Utility = ((this._TotalFlowSendAndReached * this._W) + this._TotalFlowConsumed) - (this._TotalFlowSent + this._TotalFlowForwarded);
 
-                if (Utility > MaxUtility)
-                {
-                    MaxUtility = Utility;
-                    for (int x = 0; x < this._Combinations.GetLength(1); x++)
+                    if (Utility > MaxUtility)
                     {
-                        MaxCombination[x] = this._Combinations[i, x];
+                        MaxUtility = Utility;
+                        for (int x = 0; x < this._Combinations.GetLength(1); x++)
+                        {
+                            MaxCombination[x] = this._Combinations[i, x];
+                        }
                     }
                 }
-            }
 
-            this._CurrUtility = MaxUtility;
+                this._CurrUtility = MaxUtility;
 
-            for (int index = 0; index < MaxCombination.Length; index++)
-            {
-                if (MaxCombination[index] != this._CurrCombination[index])
-                {
-                    flag = true;
-                    break;
-                }
-            }
-
-            if (flag)
-            {
-                NodeActivator.NoChangeCounter = 0;
                 for (int index = 0; index < MaxCombination.Length; index++)
                 {
-                    this._CurrCombination[index] = MaxCombination[index];
+                    if (MaxCombination[index] != this._CurrCombination[index])
+                    {
+                        flag = true;
+                        break;
+                    }
                 }
-                this._UpdateThresholdAndBlockRates(MaxCombination);
-            }
-            else
-            {
-                int counter = NodeActivator.NoChangeCounter;
-                NodeActivator.NoChangeCounter = counter + 1;
+                //if the best combination is not current combination, implement it
+                if (flag)
+                {
+                    NodeActivator.NoChangeCounter = 0;
+                    for (int index = 0; index < MaxCombination.Length; index++)
+                    {
+                        this._CurrCombination[index] = MaxCombination[index];
+                    }
+                    this._UpdateThresholdAndBlockRates(MaxCombination);
+                    foreach (int key in this.Targets.Keys)
+                    {
+                        NodeList.Nodes[key].WakeUpCall = true;
+                    }
+                    foreach (int key in this.SourcesAndFlowConsumed.Keys)
+                    {
+                        NodeList.Nodes[key].WakeUpCall = true;
+                    }
+                    return false;
+                }
+                else
+                {
+                  //  int counter = NodeActivator.NoChangeCounter;
+                  //  NodeActivator.NoChangeCounter = counter + 1;
+                    return true;
+                }
             }
         }
 
-
+        /// <summary>
+        /// This method implements the best combination decided by strategy
+        /// </summary>
+        /// <param name="Combination"></param>
         private void _UpdateThresholdAndBlockRates(int[] Combination)
         {
             int x = 0, targetID = 0, sourceID = 0;
@@ -185,11 +221,14 @@ namespace NetworkSimulationApp.Simulation
                 }
             }
         }
-
+        /// <summary>
+        /// This method is called by node before it finds the best combination.
+        /// It checks for threshold for each target node and if any node has 
+        /// block value more than its threshold,it will the cut the edge with that node
+        /// </summary>
         private void _ReArrange()
         {
-            int x = 0;
-
+           
             foreach (int i in this.Targets.Keys)
             {
                 if (NodeList.Nodes[i].FlowBlockValueForSources[this.ID] > this.MyTargetThresholds[i])
@@ -201,24 +240,12 @@ namespace NetworkSimulationApp.Simulation
                     this.Targets[i] = true;
                 }
             }
-
-            for (int i = 0; i < this._CurrCombination.Length; i++)
-            {
-                if (i >= Sources.Count)
-                {
-                    x = i - Sources.Count;
-                    if (Targets.ElementAt(x).Value)
-                    {
-                        this._CurrCombination[i] = 1;
-                    }
-                    else
-                    {
-                        this._CurrCombination[i] = 0;
-                    }
-                }
-            }
         }
-
+        /// <summary>
+        /// updates current flow that this node is sending to 
+        /// its destinations according to the flow that is 
+        /// reaching to each destination
+        /// </summary>
         private void _CurrDemandOptimization()
         {
             float amountReached = 0;
@@ -230,7 +257,9 @@ namespace NetworkSimulationApp.Simulation
                 if (checkTarget(dest)) this.MyDestinationsAndCurrentDemands[dest] = this.MyDestinationsAndDemands[dest];
             }
         }
-
+        /// <summary>
+        /// intialize array of all possible combinations
+        /// </summary>
         private void _intializeCombinations()
         {
             int length = 0, j = 0, size = 0;
@@ -249,8 +278,12 @@ namespace NetworkSimulationApp.Simulation
                 this._GenerateCombinations(r, length, j);
                 j++;
             }
-        }
 
+        }
+        /// <summary>
+        /// this method has algorithm to returns unique combination
+        /// of 0's and 1's for each index
+        /// </summary>
         private void _GenerateCombinations(int rank, int n, int index)
         {
             for (int i = n; i >= 1; i--)
@@ -259,6 +292,10 @@ namespace NetworkSimulationApp.Simulation
                 rank = rank / 2;
             }
         }
+        /// <summary>
+        /// This is a getter method
+        /// </summary>
+        /// <returns>returns the total current successful of this node</returns>
         public float getTotalCurrentFlow()
         {
             float totalFlow = 0;
@@ -266,12 +303,12 @@ namespace NetworkSimulationApp.Simulation
             foreach (KeyValuePair<int, float> pair in this.MyDestinationsAndCurrentDemands) totalFlow += pair.Value;
             return totalFlow;
         }
-
+        //returns the current utility of this node
         public float getUtility()
         {
             return this._CurrUtility;
         }
-
+        //check if destination is directly connected to this node
         public bool checkTargetDestination(int i)
         {
             foreach (int dest in this.MyDestinationsAndDemands.Keys)
@@ -280,6 +317,7 @@ namespace NetworkSimulationApp.Simulation
             }
             return false;
         }
+        //check if target node is also a destination for this node
         public bool checkTarget(int i)
         {
             foreach (int key in this.Targets.Keys)

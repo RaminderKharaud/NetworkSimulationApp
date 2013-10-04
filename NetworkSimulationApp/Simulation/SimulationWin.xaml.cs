@@ -13,11 +13,20 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Threading;
 using System.Windows.Threading;
+using NetworkSimulationApp.AdHocMessageBox;
 
 namespace NetworkSimulationApp.Simulation
 {
     /// <summary>
-    /// Interaction logic for SimulationWin.xaml
+    /// File:                   SimulationWin.cs
+    /// 
+    /// Author:                 Raminderpreet Singh Kharaud
+    /// 
+    /// Date:       August 2013
+    /// 
+    /// Revision    1.1         No Revision Yet
+    ///                         
+    /// Purpose:                Interaction logic for SimulationWin.xaml
     /// </summary>
     public partial class SimulationWin : Window
     {
@@ -29,13 +38,24 @@ namespace NetworkSimulationApp.Simulation
             taskList = new List<Task>();
             canceled = false;
             InitializeComponent();
+          //  this.Closing += Window_Closing;
         }
+        /// <summary>
+        /// This method writes output to the simulation window
+        /// </summary>
+        /// <param name="output">line that will be written to window</param>
         public void WriteOutput(string output)
         {
             Application.Current.Dispatcher.BeginInvoke(
               DispatcherPriority.Background,
               new Action(() => this.txtOutput.Text += output + '\n'));
         }
+        /// <summary>
+        /// This method actually starts the thread simulation by creating 
+        /// a new thread for each node in the static node list and a separate 
+        /// thread for node activator.
+        /// </summary>
+        /// <param name="singleFlow"></param>
         public void StartSim(float singleFlow)
         {
             int result = 0, id = 0;
@@ -48,15 +68,15 @@ namespace NetworkSimulationApp.Simulation
             foreach (KeyValuePair<int, int> pair in NodeActivator.NodeSplitBySourceLog)
             {
                 id = NodeList.Nodes[pair.Key].GraphID;
-                this.txtOutput.Text += "Node: " + id + " was split by sources";
+                this.txtOutput.Text += "Node: " + id + " was split by sources\n";
             }
             foreach (KeyValuePair<int, int> pair in NodeActivator.NodeSplitByTargetLog)
             {
                 id = NodeList.Nodes[pair.Key].GraphID;
-                this.txtOutput.Text += "Node: " + id + " was split by targets";
+                this.txtOutput.Text += "Node: " + id + " was split by targets\n";
             }
 
-            this.txtOutput.Text += "Performing Simulation...\n\n";
+            this.txtOutput.Text += "\nPerforming Simulation...\n\n";
             try
             {
                 foreach (KeyValuePair<int, AdHocNode> pair in NodeList.Nodes)
@@ -81,25 +101,42 @@ namespace NetworkSimulationApp.Simulation
             // return code to the parent process.
             Environment.ExitCode = result;
         }
+        /// <summary>
+        /// cancel thread through cancelation token
+        /// </summary>
         public void CancleThreads()
         {
-            CommonCalToken.Cancel();
+           // CommonCalToken.Cancel();
+            NodeActivator.Cancel = true;
             canceled = true;
         }
         
-
+        /// <summary>
+        /// stop simulation if its not already stopped or finished.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btnSimulation_Click(object sender, RoutedEventArgs e)
         {  
             if (!canceled)
             {
+                NodeActivator.Cancel = true;
                 this.CancleThreads();
                 this.txtOutput.Text += "\n\n Simulation Cancled";
             }
         }
-
+        /// <summary>
+        /// closing window will also stop the simulation
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            this.CancleThreads();
+            if (!NodeActivator.Cancel)
+            {
+                e.Cancel = true;
+                ExceptionMessage.Show("Simualtion still running");
+            }
         }
     }
 }

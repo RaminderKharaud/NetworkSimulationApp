@@ -52,7 +52,7 @@ namespace NetworkSimulationApp
             _OriginID = 1;
             _DestinationID = 1;
             _DemandVal = 0;
-            _Demand = null;
+            _Demand = "0";
             _CombList = new ObservableCollection<int>();
         }
         /// <summary>
@@ -149,6 +149,7 @@ namespace NetworkSimulationApp
                 }
                 catch (Exception ex)
                 {
+                    _Demand = "0";
                     _DemandVal = 0;
                     ExceptionMessage.Show("Demand has invalid value: "+ ex.ToString());
                 }

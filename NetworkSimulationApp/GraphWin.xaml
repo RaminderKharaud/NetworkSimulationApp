@@ -2,6 +2,18 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="GraphWin" Height="276" Width="495">
+    <!--
+     File:                  GraphWin.xaml
+   
+     Author:                Raminderpreet Singh Kharaud
+    
+     Date:       August 2013
+     
+     Revision    1.1        No Revision Yet
+     
+    Purpose:                This file contains XAML of controls, styles and Data Templates for create Networkx Window
+    Knowldge Required       **In order to fully understand this code, reader should have basic knowldge of XAML of WPF
+    -->
     <Window.Resources>
         <Style x:Key="ButtonBackground" TargetType="{x:Type Border}">
             <Setter Property="Background">

@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace NetworkSimulationApp.NonThreadSimulation
 {
+    /// <summary>
+    /// This class has the same code as the AdHocNode class in threaded version except two difference:
+    /// 1) This class does not use concurrent data structures
+    /// 2) This class only update values instead of sending flow data packets
+    /// For code comments please refer to the same class in Threaded version under "Simulation" folder
+    /// </summary>
     internal partial class AdHocNode
     {
         public HashSet<int> Sources;
@@ -73,13 +79,14 @@ namespace NetworkSimulationApp.NonThreadSimulation
                 this._intializeCombinations();
             }
             
-            if (failure < this._FailureRate)
+            if (failure < this._FailureRate && NodeActivator.FailNum > 0 && this._failed == false)
             {
                 this._KillMySelf();
                 NodeActivator.RemoveNode(this.ID);
-                _failed = true;
+                NodeActivator.FailNum = NodeActivator.FailNum - 1;
+                this._failed = true;
             }
-            if (!_failed)
+            if (!this._failed)
             {
                 this._SourceNum = this.Sources.Count;
                 int i = 0;

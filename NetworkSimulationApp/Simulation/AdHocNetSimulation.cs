@@ -11,12 +11,21 @@ using System.Collections.Concurrent;
 namespace NetworkSimulationApp.Simulation
 {
     /// <summary>
-    /// This class is called by ModelView when user press the start button to start simulation.
-    /// This class set up all the variables needed for the simulation to begin and call the actuall simulation loop
+    /// File:                   AdHocNetSimulation.cs
+    /// 
+    /// Author:                 Raminderpreet Singh Kharaud
+    /// 
+    /// Date:       May 2013
+    /// 
+    /// Revision    1.1         No Revision Yet
+    /// 
+    /// Purpose:                This class sets up all the data for simulation (nodes, edges etc) for simulation
+    ///                         based on the data provided by GUI. It also fill all the data structure, forwarding 
+    ///                         talbe for each node according to their edges and split nodes as required. This class
+    ///                         holds the Generator method which is called by GUI to start the simulation.
     /// </summary>
     internal class AdHocNetSimulation
     {
-      //  protected volatile ConcurrentDictionary<int, AdHocNode> Nodes;
         public static SimulationWin SimWindow;
         private int[] _Vertexes;
         private int[,] _Edges;
@@ -25,20 +34,17 @@ namespace NetworkSimulationApp.Simulation
         private double _FaiureRate;
         private float _MaxDemand, _MaxThreshold;
         private int _MaxDegree;
-        public AdHocNetSimulation()
-        {
-         //   NodeList.Nodes = new ConcurrentDictionary<int, AdHocNode>();
-        }
+
+        public AdHocNetSimulation(){ }
+
         #region public methods
-       
+
         /// <summary>
         /// Generator method checks whether the simulation is already running or not to make
-        /// sure only one simulation can run at one time. It does this by checking all the windows opened
-        /// at a given time. If no simulation is running then it will call private _Generate method to
-        /// new simulation. If the Simulation is running it will show the message.
+        /// sure only one simulation can run at one time. If no simulation is running then it 
+        /// will call private _Generate method to start new simulation. If the Simulation is 
+        /// running it will show the message.
         /// </summary>
-        /// <param name="Graph"> Graph is a NetGraph Object with nodes and edges passed by refference
-        /// from ModelView</param>
         public void Generator(int[] vertexes, int[,] edges, float[,] commodities, float ProfitVal, float maxDemand, int Nodedegree, float nodeFailureRate)
         {
             string WinType = "";
@@ -56,7 +62,7 @@ namespace NetworkSimulationApp.Simulation
                 this._ProfitVal = ProfitVal;
                 this._MaxDemand = maxDemand;
                 this._FaiureRate = nodeFailureRate;
-                this._FaiureRate = this._FaiureRate / 100000;
+                this._FaiureRate = nodeFailureRate;
                 this._MaxDegree = Nodedegree;
                 this._generate();
             }
@@ -69,11 +75,12 @@ namespace NetworkSimulationApp.Simulation
 
         #region private methods
         /// <summary>
-        /// 
+        /// This method does all the job before calling the simulation window.
         /// </summary>
-        /// <param name="Graph"></param>
         private void _generate()
         {
+            //initiate all the data including NodeActivator static variables
+
             int i = 0,j = 0;
             NodeList.Nodes = null;
             NodeActivator.MaxFlow = 0;
@@ -81,22 +88,35 @@ namespace NetworkSimulationApp.Simulation
             Dictionary<int, int> GraphIDtoID = new Dictionary<int, int>();
             SimWindow = new SimulationWin();
             NodeActivator.NodeNums = this._Vertexes.Count();
+            NodeActivator.EdgeNums = this._Edges.GetLength(0);
+            NodeActivator.CommNums = this._Commodities.GetLength(0);
             NodeActivator.SimWindow = SimWindow;
             NodeActivator.TotalNumberOfEdges = (float) this._Edges.GetLength(0);
             NodeActivator.WakeUpNodeList = new HashSet<int>();
             NodeActivator.NodeSplitBySourceLog = new Dictionary<int, int>();
             NodeActivator.NodeSplitByTargetLog = new Dictionary<int, int>();
+            NodeActivator.FailNum = 0;
+            NodeActivator.Cancel = false;
             this._MaxThreshold = this._Vertexes.Length * this._MaxDemand;
-            
+
+            //set up poision style probability if failure probability is greater than zero
+            if (this._FaiureRate > 0)
+            {
+                this._setNodeFailureNode();
+                this._FaiureRate = this._FaiureRate / 100000;
+            }
+
             j = 0;
+            //add nodes to the static nodelist dictionary
+            // The node IDs for simulation may be different than GUI ids
             foreach (int id in _Vertexes)
             {
                 GraphIDtoID.Add(id, j);
                 NodeList.Nodes.GetOrAdd(j, new AdHocNode(j++, id, this._ProfitVal, this._FaiureRate));
             }
-       //     new AdHocFlow(Graph.VertexCount);
+
             try
-            {
+            { //set up node data structures according to the edges in the network
                 int to, from;
                 for (i = 0; i < _Edges.GetLength(0); i++)
                 {
@@ -115,7 +135,7 @@ namespace NetworkSimulationApp.Simulation
                     NodeList.Nodes[to].FlowBlockValueForSources.GetOrAdd(NodeList.Nodes[from].ID, 0);
                     NodeList.Nodes[to].InFlow.GetOrAdd(NodeList.Nodes[from].ID, new ConcurrentDictionary<string, AdHocFlow>());
                 }
-                
+                //update commodities according to the simulation ndoe ids
                 for (i = 0; i < this._Commodities.GetLength(0); i++)
                 {
                     NodeActivator.MaxFlow += this._Commodities[i, 2];
@@ -129,6 +149,7 @@ namespace NetworkSimulationApp.Simulation
                 this._SplitCommodities();
                 this._TableFillAlgo();
                 this._TotalSingleFlow = this._CalculateSingleEdgeFlow();
+                NodeActivator.SingleEdgeFlow = this._TotalSingleFlow;
             }
             catch (Exception e)
             { 
@@ -138,11 +159,12 @@ namespace NetworkSimulationApp.Simulation
             SimWindow.Show();
             SimWindow.StartSim(this._TotalSingleFlow);
         }
-
+        /// <summary>
+        /// split nodes according to the max degree provided by user
+        /// </summary>
         private void _SplitNodes()
         {
             int length = NodeList.Nodes.Count;
-
             for (int i = 0; i < length; i++)
             {
                 if ((NodeList.Nodes[i].Sources.Count + NodeList.Nodes[i].Targets.Count) > this._MaxDegree)
@@ -158,7 +180,10 @@ namespace NetworkSimulationApp.Simulation
                 }
             }
         }
-
+        /// <summary>
+        /// split the given node by source edges and reset data for each node 
+        /// and connected nodes
+        /// </summary>
         private void _SplitBySources(int id)
         {
             int NewID = NodeList.Nodes.Count;
@@ -221,7 +246,10 @@ namespace NetworkSimulationApp.Simulation
                 NodeList.Nodes[targetID].InFlow.GetOrAdd(NewID, new ConcurrentDictionary<string, AdHocFlow>());
             }
         }
-
+        /// <summary>
+        /// split the given node by target edges and reset data for each node 
+        /// and connected nodes
+        /// </summary>
         private void _SplitByTargets(int id)
         {
             int NewID = NodeList.Nodes.Count;
@@ -287,6 +315,15 @@ namespace NetworkSimulationApp.Simulation
             }
         }
 
+        /// <summary>
+        /// This method reset commodites for splitted nodes if splitted node is origin or destination
+        /// for any commodity. f the split node is origin for some commodities and both new nodes have
+        /// same outgoing edges (i.e. node has been split by incoming edges) then each commodity will
+        /// pick its origin randomly from both nodes. If both new nodes have different outgoing edges 
+        /// (node split by outgoing edges) then each commodity will pick its origin according to which 
+        /// new node it has valid path. Same technique is used for destination node splitting. This algorithm
+        /// also preserves all the single edge commodities when any node involving single edge commodity is split.
+        /// </summary>
         private void _SplitCommodities()
         {
             Random random = new Random();
@@ -313,7 +350,7 @@ namespace NetworkSimulationApp.Simulation
                     if (this._Commodities[i, 0] == NodeActivator.NodeSplitBySourceLog.ElementAt(j).Key)
                     {
                         rand = random.Next(0, 2);
-                        if (rand == 1) this._Commodities[i, 1] = NodeActivator.NodeSplitBySourceLog.ElementAt(j).Value;
+                        if (rand == 1) this._Commodities[i, 0] = NodeActivator.NodeSplitBySourceLog.ElementAt(j).Value;
                     }
                 }
                 for (int j = 0; j < NodeActivator.NodeSplitByTargetLog.Count; j++)
@@ -341,7 +378,9 @@ namespace NetworkSimulationApp.Simulation
                 }
             }
         }
-
+        /// <summary>
+        /// This method calcuates the total single edge commodity flow
+        /// </summary>
         private float _CalculateSingleEdgeFlow()
         {
             float totalFlow = 0;
@@ -353,7 +392,10 @@ namespace NetworkSimulationApp.Simulation
             }
             return totalFlow;
         }
-
+        /// <summary>
+        /// This method fill up the forwarding table of each node that is involved in 
+        /// commodities by getting a shortest path for each commodity.
+        /// </summary>
         private void _TableFillAlgo()
         {
             int origin = 0, dest = 0;
@@ -398,11 +440,17 @@ namespace NetworkSimulationApp.Simulation
                 }
             }
         }
+        /// <summary>
+        /// This is GFS algorithm that returns shortest path for a given origin destination pair
+        /// </summary>
+        /// <param name="origin"></param>
+        /// <param name="dest"></param>
+        /// <returns>array with shortest path</returns>
         private int[] _GraphBFS(int origin, int dest)
         {
             HashSet<int> marked = new HashSet<int>();
             Queue<int> queue = new Queue<int>();
-            int[] pred = new int[_Vertexes.Length];
+            int[] pred = new int[NodeList.Nodes.Count];
             int currID = origin;
             queue.Enqueue(currID);
             marked.Add(currID);
@@ -421,11 +469,30 @@ namespace NetworkSimulationApp.Simulation
             }
             return null;
         }
+        /// <summary>
+        /// this method finds the total number of nodes that will fail for simulation
+        /// by using a poison style probability distribution
+        /// </summary>
+        private void _setNodeFailureNode()
+        {
+            Random random = new Random();
+            double num = 0;
+            int range = 0;
+            double perctage = this._FaiureRate * 100;
+            if (perctage <= 2)
+            {
+                num = random.Next(0, 3);
+            }
+            else
+            {
+                range = (int)perctage;
+                num = random.Next(range - 2, range + 3);
+            }
+            perctage = (num / 100) * this._Vertexes.Length;
+            NodeActivator.FailNum = (int)perctage;
+        }
         #endregion
 
-        #region properties
-       
-        #endregion
     }
 
  }
